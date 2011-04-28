@@ -1,4 +1,7 @@
+/////////////////////////////////
+//
+// (inline, see header)
+//
 
-//#include "stdafx.h"
 #include "AnsiFile.h"
 

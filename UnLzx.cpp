@@ -1,21 +1,19 @@
+//////////////////////////////////////
+//
+// UnLzx.cpp
+//
+// Ilkka Prusi
+// ilkka.prusi@gmail.com
+//
+// Based on: 
+// unlzx.c 1.1 (03.4.01, Erik Meusel)
+//
 
-//#include "stdafx.h"
+
 #include "UnLzx.h"
 
-// temp, for output..
-//#include <stdio.h>
-//#include <iostream>
 
-/*
-static const char *month_str[16]=
-{
- "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug",
- "sep", "oct", "nov", "dec", "?13", "?14", "?15", "?16"
-};
-*/
-
-
-static const unsigned int crc_table[256]=
+static const unsigned int g_crc_table[256]=
 {
  0x00000000,0x77073096,0xEE0E612C,0x990951BA,0x076DC419,0x706AF48F,
  0xE963A535,0x9E6495A3,0x0EDB8832,0x79DCB8A4,0xE0D5E91E,0x97D2D988,
@@ -64,124 +62,151 @@ static const unsigned int crc_table[256]=
 
 /* Possible problems with 64 bit machines here. It kept giving warnings   */
 /* for people so I changed back to ~.                                     */
-void crc_calc(unsigned char *memory, unsigned int length, unsigned int &sum)
+void crc_calc(const unsigned char *memory, unsigned int length, unsigned int &sum)
 {
-	register unsigned int temp;
+	// instead of making this register,
+	// reducing file-IO would be more useful.. 
+	// (not all compilers honor that anyway..)
+	// also inlining this might be more efficient
+	//register unsigned int temp;
 
 	if(length)
 	{
-		temp = ~sum; /* was (sum ^ 4294967295) */
+		unsigned int temp = ~sum; /* was (sum ^ 4294967295) */
 		do
 		{
-			temp = crc_table[(*memory++ ^ temp) & 255] ^ (temp >> 8);
+			temp = g_crc_table[(*memory++ ^ temp) & 255] ^ (temp >> 8);
 		} while(--length);
 		sum = ~temp; /* was (temp ^ 4294967295) */
 	}
 }
 
-void CUnLzx::ReadInfoHeader(const std::string &szArchive, CAnsiFile &ArchiveFile, tLzxInfoHeader &InfoHeader) const
-{
-	if (ArchiveFile.Read(InfoHeader.info_header, 10) == false)
-	{
-		throw ArcException("Not enough data to read info header", szArchive);
-	}
 
-	if (InfoHeader.IsLzx() == false)
-	{
-		throw ArcException("Info_Header: Bad ID", szArchive);
-	}
-}
+///////////// CUnLzx
 
-void CUnLzx::ReadString(CAnsiFile &ArchiveFile, const unsigned int uiSize, unsigned char *pBuffer) const
-{
-	ArchiveFile.Read(pBuffer, uiSize);
-	pBuffer[uiSize] = 0;
-}
 
-bool CUnLzx::ViewArchive(CLzxArchive &ArchiveInfo)
+void CUnLzx::OpenArchiveFile(CAnsiFile &ArchiveFile)
 {
-	CAnsiFile ArchiveFile(ArchiveInfo.m_szName);
-	if (ArchiveFile.IsOk() == false)
+	if (ArchiveFile.Open(m_szArchive) == false)
 	{
 		throw IOException("FOpen(Archive)");
 	}
 
-	ArchiveInfo.m_nSize = ArchiveFile.GetSize();
-	if (ArchiveInfo.m_nSize < sizeof(tLzxInfoHeader))
+	m_nFileSize = ArchiveFile.GetSize();
+	if (m_nFileSize < sizeof(tLzxInfoHeader))
 	{
 		// (just ignore like old one?)
-		throw ArcException("Not enough data to read header", ArchiveInfo.m_szName);
+		throw ArcException("Not enough data to read header", m_szArchive);
 	}
 
-	ReadInfoHeader(ArchiveInfo.m_szName, ArchiveFile, ArchiveInfo.m_InfoHeader);
+	if (ArchiveFile.Read(m_InfoHeader.info_header, 10) == false)
+	{
+		throw ArcException("Not enough data to read info header", m_szArchive);
+	}
 
+	if (m_InfoHeader.IsLzx() == false)
+	{
+		throw ArcException("Info_Header: Bad ID", m_szArchive);
+	}
+}
+
+void CUnLzx::ReadEntryHeader(CAnsiFile &ArchiveFile, CArchiveEntry &Entry)
+{
+	// temp for counting crc-checksum of entry-header,
+	// verify by counting that crc in file is same
+	unsigned int uiCrcSum = 0;
+
+	// temp for string-reading
+	unsigned int uiStringLen = 0;
+
+	// get value and reset for counting crc (set zero where header CRC)
+	Entry.m_uiCrc = Entry.m_Header.TakeCrcBytes();
+	crc_calc(Entry.m_Header.archive_header, 31, uiCrcSum);
+
+	// read file name
+	unsigned char header_filename[256];
+	uiStringLen = Entry.m_Header.GetFileNameLength();
+	if (ArchiveFile.Read(header_filename, uiStringLen) == false)
+	{
+		throw IOException("Failed reading string: filename");
+	}
+
+	header_filename[uiStringLen] = 0;
+	crc_calc(header_filename, uiStringLen, uiCrcSum); // update CRC
+	Entry.m_szFileName = (char*)header_filename; // keep as string
+
+	// read comment
+	unsigned char header_comment[256];
+	uiStringLen = Entry.m_Header.GetCommentLength();
+	if (ArchiveFile.Read(header_comment, uiStringLen) == false)
+	{
+		throw IOException("Failed reading string: comment");
+	}
+
+	header_comment[uiStringLen] = 0;
+	crc_calc(header_comment, uiStringLen, uiCrcSum); // update CRC
+	Entry.m_szComment = (char*)header_comment; // keep as string
+
+	// verify counted crc against the one read from file
+	// (in case of corruption of file),
+	// check against CRC in entry-header (instead of data which is separate)
+	if (uiCrcSum != Entry.m_uiCrc)
+	{
+		// critical error? 
+		// -> throw exception
+		throw ArcException("CRC: Archive_Header", Entry.m_szFileName);
+	}
+
+	// parse some entry-header information for later processing
+	Entry.m_uiDataCrc = Entry.m_Header.GetDataCrc(); // keep data-CRC also for easy handling
+	Entry.ParseAttributes();	// file protection modes
+	Entry.HandlePackingSizes(); // packed/unpacked and merge-cases
+}
+
+bool CUnLzx::ViewArchive(CAnsiFile &ArchiveFile)
+{
 	bool bAbort = false;
 
+	// reset statistical counters before adding again
+	ResetCounters();
 	do
 	{
-		ArchiveInfo.m_EntryList.push_back(CArchiveEntry());
-		CArchiveEntry &Entry = ArchiveInfo.m_EntryList.back();
-
-		if (ArchiveFile.Read(Entry.m_Header.archive_header, 31) == false)
+		long lEntryOffset = 0;
+		if (ArchiveFile.Tell(lEntryOffset) == false)
 		{
-			// (just ignore like old one?)
-			//throw ArcException("Not enough data to read archive header", szArchive)
+			throw IOException("FTell(): failed to tell position");
+		}
 
+		// add mapping of this offset to entry-information
+		m_EntryList.insert(tArchiveEntryList::value_type(lEntryOffset,CArchiveEntry()));
+		auto itEntry = m_EntryList.find(lEntryOffset); // locate it again
+
+		// read entry header from archive
+		if (ArchiveFile.Read(itEntry->second.m_Header.archive_header, 31) == false)
+		{
+			// -> can be normal case when all files handled..
 			return true;
 		}
 
+		// read and verify checksum of this entry-header,
+		// should throw exception on error
+		ReadEntryHeader(ArchiveFile, itEntry->second);
 
-		unsigned int sum = 0;
+		// count some statistical information
+		AddCounters(itEntry->second);
 
-		// get value and reset for counting crc
-		Entry.m_uiCrc = Entry.m_Header.TakeCrcBytes();
-		crc_calc(Entry.m_Header.archive_header, 31, sum);
-
-		// read file name
-		unsigned char header_filename[256];
-		ReadString(ArchiveFile, Entry.m_Header.GetFileNameLength(), header_filename);
-		crc_calc(header_filename, Entry.m_Header.GetFileNameLength(), sum); // update CRC
-		Entry.m_szFileName = (char*)header_filename; // keep as string
-
-		// read comment
-		unsigned char header_comment[256];
-		ReadString(ArchiveFile, Entry.m_Header.GetCommentLength(), header_comment);
-		crc_calc(header_comment, Entry.m_Header.GetCommentLength(), sum); // update CRC
-		Entry.m_szComment = (char*)header_comment; // keep as string
-
-		unsigned char pack_mode = Entry.m_Header.GetPackMode(); /* pack mode */
-
-		// sum == 0 ?
-		if(sum == Entry.m_uiCrc)
+		/* seek past the packed data */
+		if (itEntry->second.m_ulPackedSize)
 		{
-			Entry.ParseAttributes(); /* file protection modes */
-			Entry.CheckPackedSize();
-			Entry.m_ulUnpackedSize = Entry.m_Header.GetUnpackSize();
-			Entry.m_ulPackedSize = Entry.m_Header.GetPackSize();
-
-			ArchiveInfo.m_ulTotalPacked += Entry.m_ulPackedSize;
-			ArchiveInfo.m_ulTotalUnpacked += Entry.m_ulUnpackedSize;
-			ArchiveInfo.m_ulMergeSize += Entry.m_ulUnpackedSize;
-			ArchiveInfo.m_ulTotalFiles++;
-
-			/* seek past the packed data */
-			if (Entry.m_ulPackedSize)
+			m_ulMergeSize = 0; // why?
+			if (ArchiveFile.Seek(itEntry->second.m_ulPackedSize, SEEK_CUR) == false)
 			{
-				ArchiveInfo.m_ulMergeSize = 0;
-				if(!fseek((FILE*)ArchiveFile, Entry.m_ulPackedSize, SEEK_CUR))
-				{
-					bAbort = false; /* continue */
-				}
-				else
-				{
-					throw IOException("FSeek()");
-				}
+				throw IOException("FSeek(): failed to seek past packed data");
 			}
-		}
-        else
-		{
-			//std::cerr << "CRC: Archive_Header" << std::endl;
-			bAbort = true;
+			else
+			{
+				bAbort = false; /* continue */
+			}
 		}
 
 	} while (bAbort == false);
@@ -189,82 +214,20 @@ bool CUnLzx::ViewArchive(CLzxArchive &ArchiveInfo)
 	return true;
 }
 
-bool CUnLzx::ExtractArchive(const std::string &szArchive)
-{
-	struct tLzxInfoHeader InfoHeader;
-
-	CAnsiFile ArchiveFile(szArchive);
-	if (ArchiveFile.IsOk() == false)
-	{
-		throw IOException("FOpen(Archive)");
-	}
-
-	if (ArchiveFile.GetSize() < sizeof(tLzxInfoHeader))
-	{
-		// (just ignore like old one?)
-		throw ArcException("Not enough data to read header", szArchive);
-	}
-
-	ReadInfoHeader(szArchive, ArchiveFile, InfoHeader);
-
-	return false;
-}
-
 
 //////// public methods
 
-CUnLzx::CUnLzx(void)
+// list all files in archive for viewing
+bool CUnLzx::View(tArchiveEntryList &lstArchiveInfo)
 {
-}
+	CAnsiFile ArchiveFile;
 
-CUnLzx::~CUnLzx(void)
-{
-}
-
-bool CUnLzx::View(CLzxArchive &ArchiveInfo)
-{
-	return ViewArchive(ArchiveInfo);
-}
-
-bool CUnLzx::ViewList(std::list<std::string> &lstArchives, tArchiveList &ArcList)
-{
-	bool bRet = true;
-	auto it = lstArchives.begin();
-	auto itEnd = lstArchives.end();
-
-	while (it != itEnd)
+	OpenArchiveFile(ArchiveFile);
+	if (ViewArchive(ArchiveFile) == true)
 	{
-		ArcList.push_back(CLzxArchive((*it)));
-		if (ViewArchive(ArcList.back()) == false)
-		{
-			bRet = false;
-		}
-		++it;
+		lstArchiveInfo = m_EntryList;
+		return true;
 	}
-	return bRet;
-}
-
-/* do a single archive */
-bool CUnLzx::Extract(std::string &szArchive)
-{
-	return ExtractArchive(szArchive);
-}
-
-/* do multiple archives */
-bool CUnLzx::ExtractList(std::list<std::string> &lstArchives)
-{
-	bool bRet = true;
-	auto it = lstArchives.begin();
-	auto itEnd = lstArchives.end();
-
-	while (it != itEnd)
-	{
-		if (ExtractArchive((*it)) == false)
-		{
-			bRet = false;
-		}
-		++it;
-	}
-	return bRet;
+	return false;
 }
 

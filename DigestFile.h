@@ -12,7 +12,8 @@
 
 // note: should reverse inheritance-order..
 
-// TODO: replace with memory mapped handling
+// TODO: use memory-mapped instead..
+// or replace by Qt's own..
 //#include "MemoryMappedFile.h"
 
 #include "BufferedFile.h"

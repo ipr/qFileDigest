@@ -139,8 +139,26 @@ public:
 		}
 		return true;
 	}
-};
 
+	bool Tell(long &lPos)
+	{
+		lPos = ftell(m_pFile);
+		if (lPos < 0)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	bool Seek(const size_t nBytes, const int iOrigin)
+	{
+		if (fseek(m_pFile, nBytes, iOrigin) != 0)
+		{
+			return false;
+		}
+		return true;
+	}
+};
 
 #endif // ifndef _ANSIFILE_H_
 

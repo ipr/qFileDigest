@@ -2,11 +2,11 @@
 #define _UNLZX_H_
 
 #include <string>
-#include <list>
+//#include <list>
+#include <map>
 #include <exception>
 
 #include "AnsiFile.h"
-
 
 // exception-classes for error cases
 class IOException : public std::exception
@@ -35,9 +35,15 @@ public:
 };
 
 
+// archive info-header entry (archive-file header)
 struct tLzxInfoHeader
 {
 	unsigned char info_header[10];
+
+	tLzxInfoHeader()
+	{
+		::memset(info_header, 0, sizeof(unsigned char)*10);
+	}
 
 	bool IsLzx()
 	{
@@ -49,13 +55,17 @@ struct tLzxInfoHeader
 	}
 };
 
-//typedef unsigned int uint;
-
 // header of single entry in LZX-archive
 struct tLzxArchiveHeader
 {
 	unsigned char archive_header[31];
 
+	tLzxArchiveHeader()
+	{
+		::memset(archive_header, 0, sizeof(unsigned char)*31);
+	}
+
+	// CRC in header (including filename, comment etc.)
 	unsigned int TakeCrcBytes()
 	{
 		unsigned int crc = (archive_header[29] << 24) + (archive_header[28] << 16) + (archive_header[27] << 8) + archive_header[26];
@@ -69,6 +79,12 @@ struct tLzxArchiveHeader
 		return crc;
 	}
 
+	// CRC of actual data (after checking header-CRC)
+	unsigned int GetDataCrc()
+	{
+		return (archive_header[25] << 24) + (archive_header[24] << 16) + (archive_header[23] << 8) + archive_header[22]; /* data crc */
+	}
+
 	unsigned char GetAttributes()
 	{
 		return archive_header[0]; /* file protection modes */
@@ -77,6 +93,16 @@ struct tLzxArchiveHeader
 	unsigned char GetPackMode()
 	{
 		return archive_header[11]; /* pack mode */
+	}
+
+	unsigned int GetFileNameLength()
+	{
+		return archive_header[30]; /* filename length */
+	}
+
+	unsigned int GetCommentLength()
+	{
+		return archive_header[14]; /* comment length */
 	}
 
 	unsigned int GetPackSize()
@@ -106,16 +132,6 @@ struct tLzxArchiveHeader
 		minute = (temp >> 6) & 63;
 		second = temp & 63;
 	}
-
-	unsigned int GetFileNameLength()
-	{
-		return archive_header[30]; /* filename length */
-	}
-
-	unsigned int GetCommentLength()
-	{
-		return archive_header[14]; /* comment length */
-	}
 };
 
 // describe single entry within LZX-archive
@@ -140,14 +156,14 @@ public:
 			d = false;
 		}
 
-		bool h;
-		bool s;
-		bool p;
-		bool a;
-		bool r;
-		bool w;
-		bool e;
-		bool d;
+		bool h; // 'hidden'
+		bool s; // 'script'
+		bool p; // 'pure' (can be made resident in-memory)
+		bool a; // 'archived'
+		bool r; // 'readable'
+		bool w; // 'writable'
+		bool e; // 'executable'
+		bool d; // 'delete'
 	};
 	struct tFileAttributes m_Attributes;
 
@@ -156,10 +172,12 @@ public:
 		: m_Attributes()
 		, m_Header()
 		, m_uiCrc(0)
+		, m_uiDataCrc(0)
 		, m_ulUnpackedSize(0)
 		, m_bPackedSizeAvailable(true)
 		, m_ulPackedSize(0)
 		, m_bIsMerged(false)
+		, m_bIsExtracted(false)
 		, m_szFileName()
 		, m_szComment()
 	{}
@@ -179,8 +197,11 @@ public:
 		m_Attributes.e = ((attrib & 8) ? true : false);
 		m_Attributes.d = ((attrib & 4) ? true : false);
 	};
-	void CheckPackedSize()
+	void HandlePackingSizes()
 	{
+		m_ulUnpackedSize = m_Header.GetUnpackSize();
+		m_ulPackedSize = m_Header.GetPackSize();
+
 		if (m_Header.archive_header[12] & 1)
 		{
 			m_bPackedSizeAvailable = false;
@@ -191,122 +212,181 @@ public:
 		}
 	}
 
+	// entry header from archive
 	tLzxArchiveHeader m_Header;
+
+	// CRC from file header
 	unsigned int m_uiCrc;
 
+	// CRC of data
+	unsigned int m_uiDataCrc;
+
+	// unpacked size from file
 	unsigned long m_ulUnpackedSize;
 
 	// for some text-files, packed size might not be given in archive
 	// (merged only?)
 	bool m_bPackedSizeAvailable;
+
+	// compressed size from file
 	unsigned long m_ulPackedSize;
 
+	// if file is merged with another
 	bool m_bIsMerged;
 
+	// is file already extracted
+	// TODO: this is quick hack, 
+	// think of better way to handle merged files..
+	bool m_bIsExtracted;
+
+	// name of entry from archive
 	std::string m_szFileName;
+
+	// comment of entry from archive
 	std::string m_szComment;
 };
 
 // list of each entry in single archive
-typedef std::list<CArchiveEntry> tArchiveEntryList;
-
-// single archive
-class CLzxArchive
-{
-public:
-	CLzxArchive(void)
-		: m_InfoHeader()
-		, m_EntryList()
-		, m_szName()
-		, m_uiCrc(0)
-		, m_nSize(0)
-		, m_ulTotalUnpacked(0)
-		, m_ulTotalPacked(0)
-		, m_ulMergeSize(0)
-		, m_ulTotalFiles(0)
-	{}
-	CLzxArchive(const std::string &szName)
-		: m_InfoHeader()
-		, m_EntryList()
-		, m_szName(szName)
-		, m_uiCrc(0)
-		, m_nSize(0)
-		, m_ulTotalUnpacked(0)
-		, m_ulTotalPacked(0)
-		, m_ulMergeSize(0)
-		, m_ulTotalFiles(0)
-	{}
-	CLzxArchive(const tLzxInfoHeader &InfoHeader)
-		: m_InfoHeader(InfoHeader)
-		, m_EntryList()
-		, m_szName()
-		, m_uiCrc(0)
-		, m_nSize(0)
-		, m_ulTotalUnpacked(0)
-		, m_ulTotalPacked(0)
-		, m_ulMergeSize(0)
-		, m_ulTotalFiles(0)
-	{}
-	~CLzxArchive(void)
-	{}
-
-	tLzxInfoHeader m_InfoHeader;
-	tArchiveEntryList m_EntryList;
-
-	std::string m_szName;
-	unsigned int m_uiCrc;
-
-	size_t m_nSize; // filesize of archive in bytes
-
-	unsigned long m_ulTotalUnpacked;
-	unsigned long m_ulTotalPacked;
-	unsigned long m_ulMergeSize;
-
-	unsigned long m_ulTotalFiles;
-};
-
-// list of archives
-typedef std::list<CLzxArchive> tArchiveList;
-
+// key: offset in archive-file to entry (internal use)
+// value: description of entry
+typedef std::map<long, CArchiveEntry> tArchiveEntryList;
 
 class CUnLzx
 {
-protected:
-	void ReadInfoHeader(const std::string &szArchive, CAnsiFile &ArchiveFile, tLzxInfoHeader &InfoHeader) const;
-	void ReadString(CAnsiFile &ArchiveFile, const unsigned int uiSize, unsigned char *pBuffer) const;
+private:
 
-	bool ViewArchive(CLzxArchive &ArchiveInfo);
-	bool ExtractArchive(const std::string &szArchive);
+	std::string m_szArchive; // path and name of archive-file
+	size_t m_nFileSize; // filesize of archive in bytes
+
+	// archive info-header (file-type etc.)
+	tLzxInfoHeader m_InfoHeader;
+
+	// list of items in archive (files)
+	tArchiveEntryList m_EntryList;
+
+	// user-given path where file(s) are 
+	// extracted to from current archive
+	// (may change on each extract() call..)
+	std::string m_szExtractionPath;
+
+	// current sizes for extraction
+	//unsigned int m_pack_size;
+	//unsigned int m_unpack_size;
+
+	// some counters for statistics of archive
+	unsigned long m_ulTotalUnpacked;
+	unsigned long m_ulTotalPacked;
+	unsigned long m_ulTotalFiles;
+	unsigned long m_ulMergeSize;
+
+	// update counters with those in entry
+	void AddCounters(CArchiveEntry &Entry)
+	{
+		// add some statistical information
+		m_ulTotalPacked += Entry.m_ulPackedSize;
+		m_ulTotalUnpacked += Entry.m_ulUnpackedSize;
+		m_ulMergeSize += Entry.m_ulUnpackedSize;
+		m_ulTotalFiles++;
+	}
+	void ResetCounters()
+	{
+		m_ulTotalUnpacked = 0;
+		m_ulTotalPacked = 0;
+		m_ulTotalFiles = 0;
+		m_ulMergeSize = 0;
+	}
+
+protected:
+	// create path and open file for writing
+	//void PrepareEntryForWriting(CArchiveEntry &Entry, CAnsiFile &OutFile);
+
+	void OpenArchiveFile(CAnsiFile &ArchiveFile);
+
+	void ReadEntryHeader(CAnsiFile &ArchiveFile, CArchiveEntry &Entry);
+
+	bool ViewArchive(CAnsiFile &ArchiveFile);
 
 public:
-
-	/*
-	typedef enum tMode
+	// options for extraction (some for viewing?)
+	class CUnLzxOptions
 	{
-		MODE_UNKNOWN = 0,
-		MODE_VIEW = 1,
-		MODE_EXTRACT = 2
+		bool m_bKeepAttributes;		// keep file-attribs (set on output-file)
+		bool m_bKeepTime;			// keep timestamp (set on output-file)
+		bool m_bClearArcBit;		// clear "archive" flag on extract
+		bool m_bLowercaseFilenames; // make filenames lower-case on extract
+
+		// by default, we handle paths "as-is",
+		// with this no paths are created on extraction (all to same place)
+		// which can cause trouble with duplicate filenames..
+		//bool m_bIgnorePaths;		// don't preserve path names on extract
+
+		//std::string m_szPattern; // pattern-match to files (extract matching)
+		//std::string m_szWorkPath; // set working path
 	};
-	tMode m_enMode;
-	*/
 
-	CUnLzx(void);
-	~CUnLzx(void);
+	CUnLzx(const std::string &szArchive)
+		: m_szArchive(szArchive)
+		, m_nFileSize(0)
+		, m_InfoHeader()
+		, m_EntryList()
+		, m_szExtractionPath()
+		//, m_pack_size(0)
+		//, m_unpack_size(0)
+		, m_ulTotalUnpacked(0)
+		, m_ulTotalPacked(0)
+		, m_ulTotalFiles(0)
+		, m_ulMergeSize(0)
+	{
+	}
 
-	// do a single archive
-	bool View(CLzxArchive &ArchiveInfo);
+	~CUnLzx(void)
+	{}
 
-	// do multiple archives
-	bool ViewList(std::list<std::string> &lstArchives, tArchiveList &ArcList);
+	// view a single archive:
+	// get archive metadata
+	// and list of each entry in the archive
+	//
+	bool View(tArchiveEntryList &lstArchiveInfo);
 
-	// do a single archive
-	bool Extract(std::string &szArchive);
+	// extract a single archive:
+	// give path where files are extracted to,
+	// additional directories are created under that (if necessary)
+	//
+	//bool Extract(const std::string &szOutPath);
 
-	// do multiple archives
-	bool ExtractList(std::list<std::string> &lstArchives);
+	// TODO:
+	// verify archive integrity
+	//
+	//bool TestArchive();
 
+	// information about archive file itself
+	std::string GetArchiveFileName()
+	{
+		return m_szArchive;
+	}
+	size_t GetArchiveFileSize()
+	{
+		return m_nFileSize;
+	}
+
+	// statistical information access to caller
+	unsigned long GetTotalSizeUnpacked() 
+	{ 
+		return m_ulTotalUnpacked; 
+	}
+	unsigned long GetTotalSizePacked() 
+	{ 
+		return m_ulTotalPacked; 
+	}
+	unsigned long GetTotalFileCount() 
+	{ 
+		return m_ulTotalFiles; 
+	}
+	unsigned long GetMergeSize() 
+	{ 
+		return m_ulMergeSize; 
+	}
 };
-
 
 #endif // ifndef _UNLZX_H_
 
