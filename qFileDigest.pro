@@ -14,6 +14,7 @@ DEFINES += _CRT_SECURE_NO_WARNINGS
 
 SOURCES += main.cpp\
         mainwindow.cpp \
+    TosecName.cpp \
     sha1.cpp \
     MD5.cpp \
     IMD5.cpp \
@@ -30,6 +31,7 @@ SOURCES += main.cpp\
     AnsiFile.cpp
 
 HEADERS  += mainwindow.h \
+    TosecName.h \
     sha1.h \
     MD5.h \
     IMD5.h \

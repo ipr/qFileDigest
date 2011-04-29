@@ -2,19 +2,28 @@
 #include "ui_detailsdialog.h"
 
 #include "PowerPacker.h"
+#include "UnLzx.h"
 
 #include <QDateTime>
+
+#include <QMessageBox>
 
 
 DetailsDialog::DetailsDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::DetailsDialog),
-	m_pDigestList(nullptr),
+	m_pParentDigestList(nullptr),
 	m_pCurrentEntry(nullptr)
 {
     ui->setupUi(this);
+	
+	// don't show unless supported
 	ui->lblDecrunch->setHidden(true);
 	ui->cmdDecrunch->setHidden(true);
+	ui->archiveList->setHidden(true);
+
+	m_DigestList.SetTreeWidget(ui->archiveList);
+	m_DigestList.InitTreeWidget();
 }
 
 DetailsDialog::~DetailsDialog()
@@ -22,10 +31,10 @@ DetailsDialog::~DetailsDialog()
     delete ui;
 }
 
-void DetailsDialog::SetDigestList(DigestList *pDigestList)
+void DetailsDialog::SetParentDigestList(DigestList *pList)
 {
-	m_pDigestList = pDigestList;
-	if (m_pDigestList == nullptr
+	m_pParentDigestList = pList;
+	if (m_pParentDigestList == nullptr
 		|| m_pCurrentEntry == nullptr)
 	{
 		return;
@@ -37,7 +46,7 @@ void DetailsDialog::SetDigestList(DigestList *pDigestList)
 void DetailsDialog::SetFileEntry(CFileEntry *pFileEntry)
 {
 	m_pCurrentEntry = pFileEntry;
-	if (m_pDigestList == nullptr
+	if (m_pParentDigestList == nullptr
 		|| m_pCurrentEntry == nullptr)
 	{
 		return;
@@ -48,10 +57,10 @@ void DetailsDialog::SetFileEntry(CFileEntry *pFileEntry)
 
 void DetailsDialog::ShowEntryDetails()
 {
-	QString szFile = m_pDigestList->GetFullPathToEntry(m_pCurrentEntry);
+	QString szFile = m_pParentDigestList->GetFullPathToEntry(m_pCurrentEntry);
 	setWindowTitle(szFile);
 	
-	ui->txtPath->setText(m_pDigestList->GetPathToEntry(m_pCurrentEntry));
+	ui->txtPath->setText(m_pParentDigestList->GetPathToEntry(m_pCurrentEntry));
 	ui->txtFileName->setText(QString::fromStdWString(m_pCurrentEntry->m_szName));
 	ui->txtFileSize->setText(QString::number(m_pCurrentEntry->m_i64FileSize));
 	ui->txtFileType->setText(QString::fromStdWString(m_pCurrentEntry->m_FileType.GetNameOfType()));
@@ -68,11 +77,16 @@ void DetailsDialog::ShowEntryDetails()
 	ui->txtModificationStamp->setText(Stamp.toString(Qt::ISODate));
 	
 	bool bIsDecrunchAvailable = false;
+	bool bIsArchiveViewAvailable = false;
 	
 	switch (m_pCurrentEntry->m_FileType.m_enFileType)
 	{
 	case HEADERTYPE_PP20:
 		bIsDecrunchAvailable = true;
+		break;
+		
+	case HEADERTYPE_LZX:
+		bIsArchiveViewAvailable = true;
 		break;
 		
 	case HEADERTYPE_XPK_GENERIC:
@@ -87,11 +101,73 @@ void DetailsDialog::ShowEntryDetails()
 		ui->lblDecrunch->setHidden(false);
 		ui->cmdDecrunch->setHidden(false);
 	}
+	if (bIsArchiveViewAvailable == true)
+	{
+		ui->archiveList->setHidden(false);
+		ShowArchiveList();
+	}
+}
+
+void DetailsDialog::ShowArchiveList()
+{
+	// show list of files in given archive-file
+	
+	QString szFile = m_pParentDigestList->GetFullPathToEntry(m_pCurrentEntry);
+	setWindowTitle(szFile);
+	
+	if (m_pCurrentEntry->m_FileType.m_enFileType == HEADERTYPE_LZX)
+	{
+		try
+		{
+			tArchiveEntryList lstArchiveInfo;
+			CUnLzx Lzx(szFile.toStdString());
+			Lzx.View(lstArchiveInfo);
+
+			// note: following is temp listing..
+			
+			QTreeWidgetItem *pTopItem = new QTreeWidgetItem((QTreeWidgetItem*)0);
+			pTopItem->setText(0, szFile);
+			ui->archiveList->addTopLevelItem(pTopItem);
+			
+			auto it = lstArchiveInfo.begin();
+			auto itEnd = lstArchiveInfo.end();
+			while (it != itEnd)
+			{
+				CArchiveEntry &Entry = it->second;
+				
+				if (Entry.m_szFileName.length() < 1)
+				{
+					++it;
+					continue;
+				}
+				
+				QTreeWidgetItem *pSubItem = new QTreeWidgetItem(pTopItem);
+				pSubItem->setText(0, QString::fromStdString(Entry.m_szFileName));
+				pSubItem->setText(1, QString::number(Entry.m_ulUnpackedSize)); // always given
+				
+				// TODO: need to extract files to get hashes..
+				
+				pTopItem->addChild(pSubItem);
+				
+				++it;
+			}
+			
+			ui->archiveList->resizeColumnToContents(0);
+		}
+		catch (std::exception &exp)
+		{
+			QMessageBox::warning(this, "Error unpacking",
+								 QString::fromLocal8Bit(exp.what()),
+								 QMessageBox::Ok);
+								 
+			//ui->lblDecrunch->setText(QString::fromLocal8Bit(exp.what()));
+		}
+	}
 }
 
 void DetailsDialog::on_cmdDecrunch_clicked()
 {
-	QString szFile = m_pDigestList->GetFullPathToEntry(m_pCurrentEntry);
+	QString szFile = m_pParentDigestList->GetFullPathToEntry(m_pCurrentEntry);
 	if (m_pCurrentEntry->m_FileType.m_enFileType == HEADERTYPE_PP20)
 	{
 		try

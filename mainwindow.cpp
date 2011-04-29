@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-//#include "archivedialog.h"
+#include "archivedialog.h"
 #include "detailsdialog.h"
 
 #include <QFileDialog>
@@ -14,6 +14,7 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
+	m_szPreviousPath(),
 	m_DigestList()
 {
     ui->setupUi(this);
@@ -38,7 +39,7 @@ MainWindow::~MainWindow()
 void MainWindow::on_actionPath_triggered()
 {
     // open browse dialog
-    QString szPathname = QFileDialog::getExistingDirectory(this, tr("Select folder"));
+    QString szPathname = QFileDialog::getExistingDirectory(this, tr("Select folder"), m_szPreviousPath);
     if (szPathname != NULL)
     {
 		emit sNewPath(szPathname);
@@ -110,6 +111,10 @@ void MainWindow::onPathSelected(QString szNewPath)
 							 QMessageBox::Ok);
 		return;
 	}
+	
+	// keep path for next selection
+	m_szPreviousPath = szNewPath;
+	
 
 	ui->statusBar->showMessage("Processing files..");
 	
@@ -195,7 +200,15 @@ void MainWindow::onItemDoubleClicked(QTreeWidgetItem *item, int column)
 	/*
 	// if archive, extract file list to new dialog and display duplicates
 	if (pEntry->m_FileType.IsArchive() == true)
-	 
+	{
+		ArchiveDialog *pArcDlg = new ArchiveDialog(this);
+		pArcDlg->SetArchiveEntry(pEntry);
+		pArcDlg->show();
+		return;
+	}
+	*/
+
+	/*
 	// only one in archive-types currently possibly to show here..
 	if (pEntry->m_FileType.m_enFileType == HEADERTYPE_LZX)
 	{
@@ -208,8 +221,23 @@ void MainWindow::onItemDoubleClicked(QTreeWidgetItem *item, int column)
 	
 	// otherwise, just display some data of the file
 	DetailsDialog *pDlg = new DetailsDialog(this);
-	pDlg->SetDigestList(&m_DigestList);
+	pDlg->SetParentDigestList(&m_DigestList);
 	pDlg->SetFileEntry(pEntry);
 	pDlg->show();
 	
+
+/*	
+	QTextEdit *pTxt = new QTextEdit(this);
+	pTxt->setWindowFlags(Qt::Window); //or Qt::Tool, Qt::Dialog if you like
+	pTxt->setReadOnly(true);
+	
+	pTxt->append(QString().append("File: ").append(QString::fromStdWString(pEntry->m_szName)));
+	pTxt->append(QString().append("Size: ").append(QString::number(pEntry->m_i64FileSize)));
+	//pTxt->append(QString().append("Modified: ").append(QString::number(pEntry->m_LastWrittenTo)));
+	pTxt->append(QString().append("Type: ").append(QString::fromStdWString(pEntry->m_FileType.GetNameOfType())));
+	pTxt->append(QString().append("Category: ").append(QString::fromStdWString(pEntry->m_FileType.GetNameOfCategory())));
+	pTxt->append(QString().append("Header: ").append(QString::fromStdWString(pEntry->m_szHeaderDump)));
+	
+	pTxt->show();
+*/
 }

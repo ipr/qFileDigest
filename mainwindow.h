@@ -28,8 +28,11 @@ signals:
 private:
     Ui::MainWindow *ui;
 	
-	// GUI-related helpers
+	// when adding path, 
+	// browse from previous selection
+	QString m_szPreviousPath;
 	
+	// GUI-related helpers
 	DigestList m_DigestList;
 	
 private slots:

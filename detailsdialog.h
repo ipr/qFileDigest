@@ -20,15 +20,21 @@ public:
     explicit DetailsDialog(QWidget *parent = 0);
     ~DetailsDialog();
 	
-	void SetDigestList(DigestList *pDigestList);
+	void SetParentDigestList(DigestList *pList);
 	void SetFileEntry(CFileEntry *pFileEntry);
 
 private:
     Ui::DetailsDialog *ui;
-	DigestList *m_pDigestList;
+	
+	// GUI-related helpers
+	DigestList *m_pParentDigestList; // parent
 	CFileEntry *m_pCurrentEntry;
 
+	// selected archive-file contents
+	DigestList m_DigestList;
+
 	void ShowEntryDetails();
+	void ShowArchiveList();
 	
 private slots:
     void on_cmdDecrunch_clicked();
