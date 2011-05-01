@@ -1,3 +1,11 @@
+/////////////////////////////////////////////////////////////////////
+//
+// GUI-related stuff in managing how to show file-related info.
+//
+// Ilkka Prusi, 2011
+//
+
+
 #ifndef DIGESTLIST_H
 #define DIGESTLIST_H
 

@@ -1,3 +1,10 @@
+///////////////////////////////////////////////
+//
+// (see notes in header file)
+//
+// Ilkka Prusi, 2011
+//
+
 #include "DigestList.h"
 
 #include <QStatusBar>
