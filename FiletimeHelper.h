@@ -1,3 +1,10 @@
+/////////////////////////////////////
+//
+// Windows FILETIME-timestamp conversion helper
+//
+// Ilkka Prusi 2011
+//
+
 #ifndef _FILETIMEHELPER_H_
 #define _FILETIMEHELPER_H_
 
