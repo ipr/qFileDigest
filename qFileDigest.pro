@@ -47,3 +47,15 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui \
     detailsdialog.ui
+
+INCLUDEPATH += ../qLhA
+LIBS += -lqLhA
+
+CONFIG (debug, debug|release) 
+{
+    LIBS += -L../qLhA-build-desktop/debug
+} 
+CONFIG (release, debug|release) 
+{
+    LIBS += -L../qLhA-build-desktop/release
+}

@@ -7,6 +7,9 @@
 #include "FileListHandler.h"
 #include "DigestList.h"
 
+// fwd. decl.
+class QLhALib;
+
 
 namespace Ui {
     class DetailsDialog;
@@ -25,6 +28,7 @@ public:
 
 private:
     Ui::DetailsDialog *ui;
+	QLhALib *m_pLhaLib;
 	
 	// GUI-related helpers
 	DigestList *m_pParentDigestList; // parent

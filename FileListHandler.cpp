@@ -10,7 +10,6 @@
 #include "MD5.h"
 #include "sha1.h"
 #include "DigestFile.h"
-#include "TosecName.h"
 
 #include "FiletimeHelper.h"
 
@@ -267,9 +266,6 @@ void CFileProcess::IdentifyFile(CFileEntry &Entry, const uint8_t *pBuffer, const
 		AsciiDumpBin(pBuffer, 16, Entry.m_szHeaderAscii);
 	}
 
-	// TODO: debug, test, finalize..
-	CTosecName TmpName(Entry.m_szName);
-	TmpName.TokenizeName();
 }
 
 wstring CFileProcess::GetFullPath(CPathList &PathList, CFileEntry &Entry) const

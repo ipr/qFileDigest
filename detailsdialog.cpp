@@ -3,15 +3,16 @@
 
 #include "PowerPacker.h"
 #include "UnLzx.h"
+#include "qlhalib.h"
 
 #include <QDateTime>
-
 #include <QMessageBox>
 
 
 DetailsDialog::DetailsDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::DetailsDialog),
+	m_pLhaLib(nullptr),
 	m_pParentDigestList(nullptr),
 	m_pCurrentEntry(nullptr)
 {
@@ -85,6 +86,7 @@ void DetailsDialog::ShowEntryDetails()
 		bIsDecrunchAvailable = true;
 		break;
 		
+	case HEADERTYPE_LHA:
 	case HEADERTYPE_LZX:
 		bIsArchiveViewAvailable = true;
 		break;
@@ -156,7 +158,63 @@ void DetailsDialog::ShowArchiveList()
 		}
 		catch (std::exception &exp)
 		{
-			QMessageBox::warning(this, "Error unpacking",
+			QMessageBox::warning(this, "Error viewing",
+								 QString::fromLocal8Bit(exp.what()),
+								 QMessageBox::Ok);
+								 
+			//ui->lblDecrunch->setText(QString::fromLocal8Bit(exp.what()));
+		}
+	}
+	else if (m_pCurrentEntry->m_FileType.m_enFileType == HEADERTYPE_LHA)
+	{
+		if (m_pLhaLib == nullptr)
+		{
+			m_pLhaLib = new QLhALib(this);
+		}
+		
+		try
+		{
+			QLhALib::tArchiveEntryList lstArchiveInfo;
+			
+			// set given file as archive
+			m_pLhaLib->SetArchive(szFile);
+		
+			// collect list of files
+			m_pLhaLib->List(lstArchiveInfo);
+
+			// note: following is temp listing..
+			
+			QTreeWidgetItem *pTopItem = new QTreeWidgetItem((QTreeWidgetItem*)0);
+			pTopItem->setText(0, szFile);
+			ui->archiveList->addTopLevelItem(pTopItem);
+			
+			auto it = lstArchiveInfo.begin();
+			auto itEnd = lstArchiveInfo.end();
+			while (it != itEnd)
+			{
+				QLhALib::CArchiveEntry &Entry = (*it);
+				if (Entry.m_szFileName.length() < 1)
+				{
+					++it;
+					continue;
+				}
+				
+				QTreeWidgetItem *pSubItem = new QTreeWidgetItem(pTopItem);
+				pSubItem->setText(0, Entry.m_szFileName);
+				pSubItem->setText(1, QString::number(Entry.m_ulUnpackedSize)); // always given
+				
+				// TODO: need to extract files to get hashes..
+				
+				pTopItem->addChild(pSubItem);
+				
+				++it;
+			}
+			
+			ui->archiveList->resizeColumnToContents(0);
+		}
+		catch (std::exception &exp)
+		{
+			QMessageBox::warning(this, "Error viewing",
 								 QString::fromLocal8Bit(exp.what()),
 								 QMessageBox::Ok);
 								 

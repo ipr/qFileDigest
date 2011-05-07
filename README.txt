@@ -11,5 +11,7 @@ Description:
 Generate hash-digest for files (recursively) in paths and locate matching duplicates.
 Simple Qt-based GUI provided.
 
+Uses code from my other projects also (PowerPacker-decrunch, UnLZX, LhaLib..).
+
 Note: should reduce duplication of stuff, think handling again (better integration of different modules).
 
