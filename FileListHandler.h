@@ -24,6 +24,8 @@ using namespace std;
 #include "FiletimeHelper.h"
 
 
+// fwd. decl.
+class CFileEntry;
 class CFileEntry
 {
 public:
@@ -54,6 +56,11 @@ public:
 	// if this entry has been processed yet
 	bool m_bEntryProcessed;
 
+	// in case file is within archive:
+	// parent is the archive from which file is
+	// extracted/decompressed for hashing
+	CFileEntry *m_pParentEntry;
+	
 public:
 	CFileEntry() 
 		: m_szName()
@@ -66,6 +73,7 @@ public:
 		, m_szMd5()
 		, m_szSha1()
 		, m_bEntryProcessed(false)
+		, m_pParentEntry(nullptr)
 	{};
 
 	CFileEntry(const wstring &szName, const long lPathIndex) 
@@ -79,6 +87,7 @@ public:
 		, m_szMd5()
 		, m_szSha1()
 		, m_bEntryProcessed(false)
+		, m_pParentEntry(nullptr)
 	{};
 	
 	~CFileEntry() 

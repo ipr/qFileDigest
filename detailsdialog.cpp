@@ -148,9 +148,16 @@ void DetailsDialog::ShowArchiveList()
 				pSubItem->setText(1, QString::number(Entry.m_ulUnpackedSize)); // always given
 				
 				// TODO: need to extract files to get hashes..
+				//
+				// also, add each extracted file to our list
+				// so we can lookup hash-matches:
+				// set current archive as parent of each of those
+				//
+				//CFileEntry *pEntry = new CFileEntry();
+				//pEntry->m_pParentEntry = m_pCurrentEntry;
+				//m_DigestList.m_FileData.AddFoundFile();
 				
 				pTopItem->addChild(pSubItem);
-				
 				++it;
 			}
 			
@@ -204,9 +211,16 @@ void DetailsDialog::ShowArchiveList()
 				pSubItem->setText(1, QString::number(Entry.m_ulUnpackedSize)); // always given
 				
 				// TODO: need to extract files to get hashes..
+				//
+				// also, add each extracted file to our list
+				// so we can lookup hash-matches:
+				// set current archive as parent of each of those
+				//
+				//CFileEntry *pEntry = new CFileEntry();
+				//pEntry->m_pParentEntry = m_pCurrentEntry;
+				//m_DigestList.m_FileData.AddFoundFile();
 				
 				pTopItem->addChild(pSubItem);
-				
 				++it;
 			}
 			
