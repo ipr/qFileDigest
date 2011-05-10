@@ -2,8 +2,8 @@
 #include "ui_detailsdialog.h"
 
 #include "PowerPacker.h"
-#include "UnLzx.h"
 #include "qlhalib.h"
+#include "qlzxlib.h"
 
 #include <QDateTime>
 #include <QMessageBox>
@@ -13,6 +13,7 @@ DetailsDialog::DetailsDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::DetailsDialog),
 	m_pLhaLib(nullptr),
+	m_pLzxLib(nullptr),
 	m_pParentDigestList(nullptr),
 	m_pCurrentEntry(nullptr)
 {
@@ -119,12 +120,21 @@ void DetailsDialog::ShowArchiveList()
 	
 	if (m_pCurrentEntry->m_FileType.m_enFileType == HEADERTYPE_LZX)
 	{
+		if (m_pLzxLib == nullptr)
+		{
+			m_pLzxLib = new QLZXLib(this);
+		}
+		
 		try
 		{
-			tArchiveEntryList lstArchiveInfo;
-			CUnLzx Lzx(szFile.toStdString());
-			Lzx.View(lstArchiveInfo);
-
+			QLZXLib::tEntryInfoList lstArchiveInfo;
+			
+			// set given file as archive
+			m_pLzxLib->SetArchive(szFile);
+		
+			// collect list of files
+			m_pLzxLib->List(lstArchiveInfo);
+			
 			// note: following is temp listing..
 			
 			QTreeWidgetItem *pTopItem = new QTreeWidgetItem((QTreeWidgetItem*)0);
@@ -135,8 +145,7 @@ void DetailsDialog::ShowArchiveList()
 			auto itEnd = lstArchiveInfo.end();
 			while (it != itEnd)
 			{
-				CArchiveEntry &Entry = it->second;
-				
+				QLZXLib::CEntryInfo &Entry = (*it);
 				if (Entry.m_szFileName.length() < 1)
 				{
 					++it;
@@ -144,7 +153,7 @@ void DetailsDialog::ShowArchiveList()
 				}
 				
 				QTreeWidgetItem *pSubItem = new QTreeWidgetItem(pTopItem);
-				pSubItem->setText(0, QString::fromStdString(Entry.m_szFileName));
+				pSubItem->setText(0, Entry.m_szFileName);
 				pSubItem->setText(1, QString::number(Entry.m_ulUnpackedSize)); // always given
 				
 				// TODO: need to extract files to get hashes..

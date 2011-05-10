@@ -26,7 +26,6 @@ SOURCES += main.cpp\
     MemoryMappedFile.cpp \
     detailsdialog.cpp \
     PowerPacker.cpp \
-    UnLzx.cpp \
     AnsiFile.cpp
 
 HEADERS  += mainwindow.h \
@@ -42,20 +41,21 @@ HEADERS  += mainwindow.h \
     MemoryMappedFile.h \
     detailsdialog.h \
     PowerPacker.h \
-    UnLzx.h \
     AnsiFile.h
 
 FORMS    += mainwindow.ui \
     detailsdialog.ui
 
-INCLUDEPATH += ../qLhA
-LIBS += -lqLhA
+INCLUDEPATH += ../qLhA ../qLZXLib
+LIBS += -lqLhA -lqLZXLib
 
 CONFIG (debug, debug|release) 
 {
     LIBS += -L../qLhA-build-desktop/debug
+    LIBS += -L../qLZXLib-build-desktop/debug
 } 
 CONFIG (release, debug|release) 
 {
     LIBS += -L../qLhA-build-desktop/release
+    LIBS += -L../qLZXLib-build-desktop/release
 }

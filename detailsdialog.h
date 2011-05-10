@@ -9,6 +9,7 @@
 
 // fwd. decl.
 class QLhALib;
+class QLZXLib;
 
 
 namespace Ui {
@@ -29,6 +30,8 @@ public:
 private:
     Ui::DetailsDialog *ui;
 	QLhALib *m_pLhaLib;
+	QLZXLib *m_pLzxLib;
+	
 	
 	// GUI-related helpers
 	DigestList *m_pParentDigestList; // parent
