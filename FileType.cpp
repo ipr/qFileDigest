@@ -71,6 +71,12 @@ tHeaderType CFileType::FileTypeFromHeader(const uint8_t *pBuffer, const uint32_t
 			// 8SVX-audio
 			return HEADERTYPE_8SVX;
 		}
+		else if (::memcmp(pTmp, "AIFF", 4) == 0)
+		{
+			// sub-type of EA-IFF-format
+			// for "Audio IFF"
+			return HEADERTYPE_AIFF;
+		}
 		else if (::memcmp(pTmp, "ANIM", 4) == 0)
 		{
 			// Amiga ANIM
@@ -136,6 +142,8 @@ tHeaderType CFileType::FileTypeFromHeader(const uint8_t *pBuffer, const uint32_t
 	}
 	else if (::memcmp(pBuffer, "RIFF", 4) == 0)
 	{
+		// note: also RIFX for big-endian version?
+		
 		// Microsoft/IBM counterpart to EA-IFF format:
 		// values in file in little-endian format
 	    enFileType = HEADERTYPE_RIFF_GENERIC;
@@ -155,14 +163,6 @@ tHeaderType CFileType::FileTypeFromHeader(const uint8_t *pBuffer, const uint32_t
 		*/
 		return enFileType;
 	}
-	/*
-	else if (::memcmp(pBuffer, "AIFF", 4) == 0)
-	{
-		// Apple counterpart to EA-IFF-format
-		// note: has "FORM" identifier at start?
-		return HEADERTYPE_AIFF;
-	}
-	*/
 	else if (::memcmp(pBuffer, "DOS", 3) == 0)
 	{
 		// AmigaDOS-disk?
@@ -359,7 +359,7 @@ tHeaderCategory CFileType::FileCategoryByType(const tHeaderType enType) const
 		
 	case HEADERTYPE_8SVX:
 	case HEADERTYPE_WAVE:
-	//case HEADERTYPE_AIFF:
+	case HEADERTYPE_AIFF:
 	//case HEADERTYPE_AU:
 	//case HEADERTYPE_SND:
 	//case HEADERTYPE_OGG:
