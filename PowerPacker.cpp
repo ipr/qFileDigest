@@ -73,7 +73,7 @@ void CPowerPacker::UnPowerpack()
 
 			if (len > m_out_list.pos - m_out_list.pos_end) 
 			{
-				throw PPException("bad character length");
+				throw IOException("bad character length");
 			}
 
 			while(len > 0) 
@@ -112,7 +112,7 @@ void CPowerPacker::UnPowerpack()
 
 		if (ptr > m_out_list.pos_end + m_out_list.size - m_out_list.pos) 
 		{
-			throw PPException("bad string pointer");
+			throw IOException("bad string pointer");
 		}
 
 		if (len == 5) 
@@ -131,7 +131,7 @@ void CPowerPacker::UnPowerpack()
 
 		if (len > m_out_list.pos - m_out_list.pos_end) 
 		{
-			throw PPException("bad string length");
+			throw IOException("bad string length");
 		}
 
 		uchar *str = m_out_list.pos + ptr;
@@ -148,21 +148,21 @@ void CPowerPacker::UnPowerpack()
 	}
 }
 
-void CPowerPacker::LoadBuffer(const uchar *pData, const ulong nSize)
+void CPowerPacker::LoadBuffer(const uint8_t *pData, const uint32_t nSize)
 {
 	/*
 	::memcpy(m_Meta.meta, pData, 4);
 
 	if (m_Meta.IsSupportedFiletype() == false)
 	{
-		throw PPException("file type is not supported");
+		throw IOException("file type is not supported");
 	}
 
 	::memcpy(m_Meta.meta + 6, pData + 4, 4);
 	m_in_list.size = (nSize - 8);
 	if (m_in_list.size < 8 || m_in_list.size > 0x1000000 || m_in_list.size % 4 != 0) 
 	{
-		throw PPException("bad compressed size");
+		throw IOException("bad compressed size");
 	}
 
 	m_in_list.ptr = (uchar*)malloc(m_in_list.size);
@@ -174,19 +174,19 @@ void CPowerPacker::LoadBuffer(const uchar *pData, const ulong nSize)
 	m_Meta.CopyMetaBits(m_MetaBits);
 	if (m_MetaBits.IsMetadataOk() == false)
 	{
-		throw PPException("bad metadata");
+		throw IOException("bad metadata");
 	}
 
 	m_out_list.size = m_Meta.GetUncompressedSize();
 	if (m_out_list.size == 0) 
 	{
-		throw PPException("bad uncompressed size");
+		throw IOException("bad uncompressed size");
 	}
 
 	m_out_list.ptr = (uchar*)malloc(m_out_list.size);
 	if (m_out_list.ptr == 0) 
 	{
-		throw PPException("failed to allocate memory for output");
+		throw IOException("failed to allocate memory for output");
 	}
 	*/
 }
@@ -196,22 +196,22 @@ void CPowerPacker::Load(const char *szInputFile)
 	CAnsiFile InputFile(szInputFile, false);
 	if (InputFile.IsOk() == false)
 	{
-		throw PPException("failed to open file");
+		throw IOException("failed to open file");
 	}
 
 	if (InputFile.Read(m_Meta.meta, 4) == false)
 	{
-		throw PPException("failed to read file");
+		throw IOException("failed to read file");
 	}
 
 	if (m_Meta.IsSupportedFiletype() == false)
 	{
-		throw PPException("file type is not supported");
+		throw IOException("file type is not supported");
 	}
 
 	if (InputFile.Read(m_Meta.meta + 6, 4) == false)
 	{
-		throw PPException("failed to read file");
+		throw IOException("failed to read file");
 	}
 
 	// get size for buffer allocation
@@ -222,14 +222,14 @@ void CPowerPacker::Load(const char *szInputFile)
 	// also size must be in power of four?
 	if (m_in_list.size < 8 || m_in_list.size > 0x1000000 || m_in_list.size % 4 != 0) 
 	{
-		throw PPException("bad compressed size");
+		throw IOException("bad compressed size");
 	}
 
 	// allocate and read at once
 	m_in_list.ptr = (uchar*)malloc(m_in_list.size);
 	if (InputFile.Read(m_in_list.ptr, m_in_list.size) == false)
 	{
-		throw PPException("failed to read file");
+		throw IOException("failed to read file");
 	}
 
 	// no longer necessary
@@ -243,19 +243,19 @@ void CPowerPacker::Load(const char *szInputFile)
 	m_Meta.CopyMetaBits(m_MetaBits);
 	if (m_MetaBits.IsMetadataOk() == false)
 	{
-		throw PPException("bad metadata");
+		throw IOException("bad metadata");
 	}
 
 	m_out_list.size = m_Meta.GetUncompressedSize();
 	if (m_out_list.size == 0) 
 	{
-		throw PPException("bad uncompressed size");
+		throw IOException("bad uncompressed size");
 	}
 
 	m_out_list.ptr = (uchar*)malloc(m_out_list.size);
 	if (m_out_list.ptr == 0) 
 	{
-		throw PPException("failed to allocate memory for output");
+		throw IOException("failed to allocate memory for output");
 	}
 }
 
@@ -264,13 +264,16 @@ void CPowerPacker::Save(const char *szOutputFile)
 	CAnsiFile OutputFile(szOutputFile, true);
 	if (OutputFile.IsOk() == false)
 	{
-		throw PPException("failed to open file to write");
+		throw IOException("failed to open file to write");
 	}
 
 	if (OutputFile.Write(m_out_list.ptr, m_out_list.size) == false)
 	{
-		throw PPException("failed to write file");
+		throw IOException("failed to write file");
 	}
+	
+	// closed on leaving scope in any case..
+	OutputFile.Close();
 }
 
 void CPowerPacker::CheckExisting(const char *szOutputFile)

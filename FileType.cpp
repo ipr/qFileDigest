@@ -239,6 +239,10 @@ tHeaderType CFileType::FileTypeFromHeader(const uint8_t *pBuffer, const uint32_t
 		{
 			return HEADERTYPE_XPK_NUKE;
 		}
+		else if (::memcmp(pTmp, "RLEN", 4) == 0)
+		{
+			return HEADERTYPE_XPK_RLEN;
+		}
 		return enFileType;
 	}
 	else if (::memcmp(pBuffer, "PP20", 4) == 0)
@@ -457,6 +461,19 @@ tHeaderType CFileType::FileTypeFromHeader(const uint8_t *pBuffer, const uint32_t
 		return HEADERTYPE_AMIGAOSLIB;
 	}
 
+	// various imploder-variations/clones, only ID is different?
+	// check for magic ID 'IMP!', or one of the other IDs used by Imploder 
+	// clones; ATN!, BDPI, CHFI, Dupa, EDAM, FLT!, M.H., PARA and RDC9 */ 
+	if (ulFirstFour == 0x494d5021 || ulFirstFour == 0x41544e21 || ulFirstFour == 0x42445049
+		|| ulFirstFour == 0x43484649 || ulFirstFour == 0x44757061 || ulFirstFour == 0x4544414d
+		|| ulFirstFour == 0x464c5421 || ulFirstFour == 0x4d2e482e || ulFirstFour == 0x50415241
+		|| ulFirstFour == 0x52444339)
+	{
+		// imploder
+		return HEADERTYPE_IMPLODER;
+	}
+	
+	
 	/*
 	// TAR (POSIX)	.tar	75 73 74 61 72	ustar (offset by 257 bytes)
 	*/
@@ -480,9 +497,11 @@ tHeaderCategory CFileType::FileCategoryByType(const tHeaderType enType) const
 		return HEADERCAT_ARCHIVE;
 		
 	case HEADERTYPE_PP20:
+	case HEADERTYPE_IMPLODER:
 	case HEADERTYPE_XPK_GENERIC:
 	case HEADERTYPE_XPK_SQSH:
 	case HEADERTYPE_XPK_NUKE:
+	case HEADERTYPE_XPK_RLEN:
 	case HEADERTYPE_GZIP:
 	case HEADERTYPE_BZIP2:
 	case HEADERTYPE_Z:
@@ -504,8 +523,7 @@ tHeaderCategory CFileType::FileCategoryByType(const tHeaderType enType) const
     case HEADERTYPE_OKTALYZER:
     case HEADERTYPE_XM:
 	case HEADERTYPE_IT:
-	//case HEADERTYPE_S3M:
-	//case HEADERTYPE_S3I:
+	case HEADERTYPE_S3M:
     case HEADERTYPE_MTM:
     //case HEADERTYPE_FC:
     //case HEADERTYPE_MO3:
@@ -513,8 +531,10 @@ tHeaderCategory CFileType::FileCategoryByType(const tHeaderType enType) const
 		return HEADERCAT_SOUND_MODULE;
 		
 	case HEADERTYPE_8SVX:
-	case HEADERTYPE_WAVE:
+	case HEADERTYPE_MAUD:
 	case HEADERTYPE_AIFF:
+	case HEADERTYPE_WAVE:
+	case HEADERTYPE_MAESTRO:
 	//case HEADERTYPE_AU:
 	//case HEADERTYPE_SND:
 	//case HEADERTYPE_OGG:
@@ -523,6 +543,7 @@ tHeaderCategory CFileType::FileCategoryByType(const tHeaderType enType) const
 		return HEADERCAT_SOUND_VOICE;
 		
 	case HEADERTYPE_ANIM:
+	//case HEADERTYPE_YAFA:
 	case HEADERTYPE_AVI:
 	//case HEADERTYPE_MOV:
 	//case HEADERTYPE_MPEG:
@@ -540,6 +561,7 @@ tHeaderCategory CFileType::FileCategoryByType(const tHeaderType enType) const
 		return HEADERCAT_3DOBJECT;
 		
 	case HEADERTYPE_ILBM:
+	case HEADERTYPE_ACBM:
 	case HEADERTYPE_JPEG:
 	case HEADERTYPE_PNG:
 	case HEADERTYPE_GIF:
@@ -583,12 +605,16 @@ wstring CFileType::GetNameOfType()
 		return _T("LZX");
 	case HEADERTYPE_PP20:
 		return _T("PowerPacker");
+	case HEADERTYPE_IMPLODER:
+		return _T("Imploder");
 	case HEADERTYPE_XPK_GENERIC:
 		return _T("XPK");
 	case HEADERTYPE_XPK_SQSH:
 		return _T("XPK (SQSH)");
 	case HEADERTYPE_XPK_NUKE:
 		return _T("XPK (NUKE)");
+	case HEADERTYPE_XPK_RLEN:
+		return _T("XPK (RLEN)");
 
 	case HEADERTYPE_RAR:
 		return _T("RAR");

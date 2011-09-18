@@ -26,7 +26,8 @@ SOURCES += main.cpp\
     MemoryMappedFile.cpp \
     detailsdialog.cpp \
     PowerPacker.cpp \
-    AnsiFile.cpp
+    AnsiFile.cpp \
+    ImploderExploder.cpp
 
 HEADERS  += mainwindow.h \
     sha1.h \
@@ -41,7 +42,8 @@ HEADERS  += mainwindow.h \
     MemoryMappedFile.h \
     detailsdialog.h \
     PowerPacker.h \
-    AnsiFile.h
+    AnsiFile.h \
+    ImploderExploder.h
 
 FORMS    += mainwindow.ui \
     detailsdialog.ui
@@ -59,3 +61,5 @@ CONFIG (release, debug|release)
     LIBS += -L../qLhA-build-desktop/release
     LIBS += -L../qLZXLib-build-desktop/release
 }
+
+

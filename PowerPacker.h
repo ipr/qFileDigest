@@ -5,8 +5,6 @@
 //
 // CAnsiFile : simple helper added for file handling
 //
-// PPException : exception-type
-//
 // Builds and works at least on VC++ 2010..
 //
 // Based on PP-Tools in Aminet:
@@ -23,25 +21,8 @@
 #define _POWERPACKER_H_
 
 #include <string>
-#include <exception>
 
 #include "AnsiFile.h"
-
-
-// exception-class for error cases
-class PPException : public std::exception
-{
-public:
-	PPException(void)
-		: std::exception()
-	{
-	}
-
-	PPException(const char *szMessage)
-		: std::exception(szMessage)
-	{
-	}
-};
 
 
 // typedefs (note: check sizes..)
@@ -50,30 +31,11 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 
-// buffer descriptor for in/out buffers
-struct tBuffer 
-{
-	tBuffer()
-	{
-		ptr = NULL;
-		size = 0;
-
-		pos = NULL;
-		pos_end = NULL;
-	};
-
-	uchar *ptr; // buffer of data
-	ulong size; // size of buffer
-
-	// position pointers for decompression
-	uchar *pos;
-	uchar *pos_end;
-};
 
 // metadata used during uncompressing
-struct tMetaBits
+struct tPPMetaBits
 {
-	tMetaBits()
+	tPPMetaBits()
 	{
 		ptrbit_2 = 0;
 		ptrbit_3 = 0;
@@ -120,7 +82,7 @@ struct tHeaderMetaData
 		::memset(meta, 0, 14);
 	};
 
-	uchar meta[14];
+	uint8_t meta[14];
 
 	// check file type ID if is supported file type
 	bool IsSupportedFiletype()
@@ -141,14 +103,14 @@ struct tHeaderMetaData
 	}
 
 	// get uncompressed size of file for buffer allocation
-	ulong GetUncompressedSize()
+	uint32_t GetUncompressedSize()
 	{
 		return (meta[10] << 16 | meta[11] << 8 | meta[12]);
 	}
 
 	// copy some values used during decompression
 	// (may be modified)
-	void CopyMetaBits(tMetaBits &MetaBits)
+	void CopyMetaBits(tPPMetaBits &MetaBits)
 	{
 		MetaBits.ptrbit_2 = meta[6]; 
 		MetaBits.ptrbit_3 = meta[7]; 
@@ -158,21 +120,41 @@ struct tHeaderMetaData
 	}
 };
 
-// 
+// TODO: inherit from common "decruncher" or move to library..?
 class CPowerPacker
 {
 protected:
+	// buffer descriptor for in/out buffers
+	struct tBuffer 
+	{
+		tBuffer()
+		{
+			ptr = NULL;
+			size = 0;
+	
+			pos = NULL;
+			pos_end = NULL;
+		};
+	
+		uint8_t *ptr; // buffer of data
+		uint32_t size; // size of buffer
+	
+		// position pointers for decompression
+		uint8_t *pos;
+		uint8_t *pos_end;
+	};
 
+	
 	// buffer descriptors for input and output buffers
 	struct tBuffer m_in_list;
 	struct tBuffer m_out_list;
 
 	// metadata of file
 	struct tHeaderMetaData m_Meta;
-	struct tMetaBits m_MetaBits;
+	struct tPPMetaBits m_MetaBits;
 
 	// table for reversing bits in a byte
-	uchar m_rev_table[256];
+	uint8_t m_rev_table[256];
 	char m_rev_build;
 
 	/* build a table to reverse the bits in a byte */
@@ -262,7 +244,7 @@ protected:
 	// decompression, unpacking
 	void UnPowerpack();
 
-	void LoadBuffer(const uchar *pData, const ulong nSize);
+	void LoadBuffer(const uint8_t *pData, const uint32_t nSize);
 	void Load(const char *szInputFile);
 	void Save(const char *szOutputFile);
 	void CheckExisting(const char *szOutputFile);
@@ -310,11 +292,11 @@ public:
 	}
 
 	// access unpacked data
-	uchar *GetUnpackedData()
+	uint8_t *GetUnpackedData()
 	{
 		return m_out_list.ptr;
 	}
-	ulong GetUnpackedSize()
+	uint32_t GetUnpackedSize()
 	{
 		return m_out_list.size;
 	}

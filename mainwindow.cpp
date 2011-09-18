@@ -47,28 +47,11 @@ void MainWindow::on_actionPath_triggered()
 
 void MainWindow::on_actionFile_triggered()
 {
-	// TODO: multi-file selection?
-	/*
-    QString szFileName = QFileDialog::getOpenFileName(this, tr("Open file"));
-    if (szFileName != NULL)
+    QStringList files = QFileDialog::getOpenFileNames(this, tr("Select files"), m_szPreviousPath);
+    if (files.isEmpty() == false)
     {
-		QStringList lst;
-		lst << szFileName;
-		emit sNewFiles(lst);
+        emit sNewFiles(files);
     }
-	*/
-
-	// something like this?
-	QFileDialog dialog(this);
-	dialog.setFileMode(QFileDialog::ExistingFiles);
-	if (dialog.exec())
-	{
-		QStringList fileNames = dialog.selectedFiles();
-		if (fileNames.size() > 0)
-		{
-			emit sNewFiles(fileNames);
-		}
-	}
 }
 
 void MainWindow::on_actionAbout_triggered()
@@ -184,6 +167,11 @@ void MainWindow::on_actionExpand_Duplicates_triggered()
 void MainWindow::on_actionClear_List_triggered()
 {
 	m_DigestList.ClearList();
+}
+
+void MainWindow::onPathMessage(QString szMessage)
+{
+    ui->statusBar->showMessage("Processing path: " + szMessage);
 }
 
 void MainWindow::onItemDoubleClicked(QTreeWidgetItem *item, int column)

@@ -49,6 +49,8 @@ private slots:
     //void onFileProcessed(CFileEntry *pEntry);
 	//void onPathProcessed(long lIndex);
 	//void onPathsProcessed();
+    
+    void onPathMessage(QString szMessage);
 	
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
 };

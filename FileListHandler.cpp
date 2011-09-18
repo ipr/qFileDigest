@@ -265,7 +265,6 @@ void CFileProcess::IdentifyFile(CFileEntry &Entry, const uint8_t *pBuffer, const
 		HexEncode(pBuffer, 16, Entry.m_szHeaderDump);
 		AsciiDumpBin(pBuffer, 16, Entry.m_szHeaderAscii);
 	}
-
 }
 
 wstring CFileProcess::GetFullPath(CPathList &PathList, CFileEntry &Entry) const

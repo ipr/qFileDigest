@@ -44,11 +44,12 @@ typedef enum tHeaderType
 	//HEADERTYPE_ARJ, // 
 	
 	// packer types
-	HEADERTYPE_PP20, // Powerpacker
-	HEADERTYPE_IMPLODER, // Imploder-packed file
-	HEADERTYPE_XPK_GENERIC, // XPK, multi-algorithm (SQSH etc.)
-	HEADERTYPE_XPK_SQSH, // XPK
-	HEADERTYPE_XPK_NUKE, // XPK
+	HEADERTYPE_PP20, // Powerpacker, Amiga
+	HEADERTYPE_IMPLODER, // Imploder-packed file (multiple ID variations..), Amiga
+	HEADERTYPE_XPK_GENERIC, // XPK, multi-algorithm (SQSH etc.), Amiga
+	HEADERTYPE_XPK_SQSH, // XPK SQSH
+	HEADERTYPE_XPK_NUKE, // XPK NUKE
+	HEADERTYPE_XPK_RLEN, // XPK RLEN
 	HEADERTYPE_GZIP, // GNU-zip packer (gz)
 	HEADERTYPE_BZIP2, // BZIP2 packer (bz2)
 	HEADERTYPE_Z, // Un*X compress (Z)
@@ -201,6 +202,14 @@ public:
 		: m_enFileType(HEADERTYPE_UNKNOWN)
 		, m_enFileCategory(HEADERCAT_UNKNOWN)
 	{}
+	
+	CFileType(const uint8_t *pBuffer, const uint32_t ulLength)
+		: m_enFileType(HEADERTYPE_UNKNOWN)
+		, m_enFileCategory(HEADERCAT_UNKNOWN)
+	{
+		m_enFileType = FileTypeFromHeader(pBuffer, ulLength);
+		m_enFileCategory = FileCategoryByType(m_enFileType);
+	}
 			
     ~CFileType()
 	{}

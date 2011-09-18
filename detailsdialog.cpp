@@ -2,6 +2,7 @@
 #include "ui_detailsdialog.h"
 
 #include "PowerPacker.h"
+#include "ImploderExploder.h"
 #include "qlhalib.h"
 #include "qlzxlib.h"
 
@@ -84,6 +85,7 @@ void DetailsDialog::ShowEntryDetails()
 	switch (m_pCurrentEntry->m_FileType.m_enFileType)
 	{
 	case HEADERTYPE_PP20:
+	case HEADERTYPE_IMPLODER:
 		bIsDecrunchAvailable = true;
 		break;
 		
@@ -266,7 +268,29 @@ void DetailsDialog::on_cmdDecrunch_clicked()
 			//m_pDigestList->ShowProcessed();
 			ui->cmdDecrunch->setHidden(true);
 		}
-		catch (PPException &exp)
+		catch (std::exception &exp) // catch by base-type
+		{
+			ui->lblDecrunch->setText(QString::fromLocal8Bit(exp.what()));
+		}
+	}
+	else if (m_pCurrentEntry->m_FileType.m_enFileType == HEADERTYPE_IMPLODER)
+	{
+		try
+		{
+			CImploderExploder Impl;
+			Impl.UnpackFile(szFile.toLocal8Bit().constData());
+			Impl.SaveToFile(szFile.toLocal8Bit().constData());
+			
+			ui->lblDecrunch->setText("Decrunch done");
+			
+			//m_pDigestList->ListFile(szFile);
+			
+			// get MD5 and SHA1 hashes etc.
+			//m_pDigestList->ProcessFileList();
+			//m_pDigestList->ShowProcessed();
+			ui->cmdDecrunch->setHidden(true);
+		}
+		catch (std::exception &exp) // catch by base-type
 		{
 			ui->lblDecrunch->setText(QString::fromLocal8Bit(exp.what()));
 		}
