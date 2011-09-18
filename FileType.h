@@ -45,6 +45,7 @@ typedef enum tHeaderType
 	
 	// packer types
 	HEADERTYPE_PP20, // Powerpacker
+	HEADERTYPE_IMPLODER, // Imploder-packed file
 	HEADERTYPE_XPK_GENERIC, // XPK, multi-algorithm (SQSH etc.)
 	HEADERTYPE_XPK_SQSH, // XPK
 	HEADERTYPE_XPK_NUKE, // XPK
@@ -55,19 +56,35 @@ typedef enum tHeaderType
 	HEADERTYPE_XZ, // XZ Utils packer (xz)
 
 	// audio types, modules ("trackers")
-	HEADERTYPE_MOD,
-	HEADERTYPE_OCTAMED,	 // OctaMED (MMD0..3, MED2..4)
-	HEADERTYPE_DBM,	 // Digibooster
-	HEADERTYPE_DBPRO,	 // Digibooster PRO
+    //HEADERTYPE_MOD_SOUNDTRACKER, // original SoundTracker format?
+	HEADERTYPE_MOD_PROTRACKER, // ProTracker (and others..)
+    HEADERTYPE_MOD_NOISETRACKER, // NoiseTracker
+    HEADERTYPE_MOD_STARTREKKER, // StarTrekker
+	HEADERTYPE_OCTAMED,	 // OctaMED "classic" (Music EDitor) (MED2..4)
+    HEADERTYPE_OCTAMED_OSS,	 // OctaMED SoundStudio (MMD0..3, MED2..4)
+	HEADERTYPE_DIGIBOOSTER,	 // old Digibooster DIGI-module
+	HEADERTYPE_DBMPRO,	 // Digibooster PRO (DBM0)
 	HEADERTYPE_SYMMOD,	 // Symphonie mod (SYMMOD)
-	//HEADERTYPE_XM,
-	//HEADERTYPE_S3M,
-	//HEADERTYPE_S3I,
-	
+    HEADERTYPE_TFMX,	 // TFMX, "The Final Musicsystem eXtended"
+    HEADERTYPE_AHX, // "Abyss' Highest eXperience" (AHX0, AHX1, was called: THX)
+    HEADERTYPE_OKTALYZER, // Oktalyzer
+	HEADERTYPE_XM, // "eXtended Module", FastTracker II, DigiTracker..
+    HEADERTYPE_IT, // ImpulseTracker
+	HEADERTYPE_S3M, // ScreamTracker 3
+    HEADERTYPE_MTM, // MultiTracker
+    //HEADERTYPE_FC, // FutureComposer (FC13, FC14)
+    //HEADERTYPE_BUZZ, // BuzzMachine ?
+    //HEADERTYPE_MO3, // Module packed with MP3..
+    HEADERTYPE_MADTRACKER2, // Mad Tracker 2
+    
 	// audio types, voice/sound
 	HEADERTYPE_8SVX, // 8-bit sound "voice" (sample)(IFF)
-	HEADERTYPE_WAVE, // wave-sound (RIFF)
+	//HEADERTYPE_16VX, // 
+	HEADERTYPE_MAUD, // 16-bit sound (IFF)
+	//HEADERTYPE_RSND, // 
 	HEADERTYPE_AIFF, // Audio-IFF (IFF-subtype)
+	HEADERTYPE_WAVE, // wave-sound (RIFF)
+	HEADERTYPE_MAESTRO, // Maestro (Samplitude?) (sample)
 	//HEADERTYPE_AU, // audacity audio-file
 	//HEADERTYPE_SND,
 	//HEADERTYPE_OGG,
@@ -76,6 +93,7 @@ typedef enum tHeaderType
 
 	// video, animation
 	HEADERTYPE_ANIM, // Amiga ANIM (IFF)
+	//HEADERTYPE_YAFA, // Wildfire ?
 	HEADERTYPE_AVI, // MS-AVI video (RIFF)
 	//HEADERTYPE_MOV, // Apple-Quicktime video
 	//HEADERTYPE_MPEG, // 
@@ -93,6 +111,17 @@ typedef enum tHeaderType
 
 	// picture types
 	HEADERTYPE_ILBM, // ILBM-picture (IFF)
+	HEADERTYPE_ACBM, // ACBM-picture (IFF): Amiga continuous BitMap
+	//HEADERTYPE_DEEP, // IFF-DEEP (XiPaint)
+	//HEADERTYPE_RGB8, // 
+	//HEADERTYPE_RGBN, // 
+	//HEADERTYPE_RGFX, // 
+	//HEADERTYPE_SHAM, // 
+	//HEADERTYPE_DHAM, // 
+	//HEADERTYPE_DCOL, // 
+	//HEADERTYPE_PCHG, // 
+	//HEADERTYPE_PBM, // 
+	//HEADERTYPE_YUVN, // 
 	//HEADERTYPE_JPEG_JFIF, // separate alternates?
 	//HEADERTYPE_JPEG_EXIF, // separate alternates?
 	//HEADERTYPE_JPEG_SPIFF, // separate alternates?
