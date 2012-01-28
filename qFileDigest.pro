@@ -19,11 +19,8 @@ SOURCES += main.cpp\
     IMD5.cpp \
     FileType.cpp \
     FileListHandler.cpp \
-    DigestFile.cpp \
     FiletimeHelper.cpp \
     DigestList.cpp \
-    BufferedFile.cpp \
-    MemoryMappedFile.cpp \
     detailsdialog.cpp \
     PowerPacker.cpp \
     AnsiFile.cpp \
@@ -35,11 +32,8 @@ HEADERS  += mainwindow.h \
     IMD5.h \
     FileType.h \
     FileListHandler.h \
-    DigestFile.h \
     FiletimeHelper.h \
     DigestList.h \
-    BufferedFile.h \
-    MemoryMappedFile.h \
     detailsdialog.h \
     PowerPacker.h \
     AnsiFile.h \
@@ -47,6 +41,11 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui \
     detailsdialog.ui
+
+# TODO: replace old libraries&classes with wrapper
+# to reduce repeated code and support for more packers&archivers
+# INCLUDEPATH += ../qXpkLib ../qXpkLib
+# LIBS += -lqXpkLib -lqXpkLib
 
 INCLUDEPATH += ../qLhA ../qLZXLib
 LIBS += -lqLhA -lqLZXLib
@@ -61,5 +60,3 @@ CONFIG (release, debug|release)
     LIBS += -L../qLhA-build-desktop/release
     LIBS += -L../qLZXLib-build-desktop/release
 }
-
-

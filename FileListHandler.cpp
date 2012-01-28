@@ -9,10 +9,11 @@
 
 #include "MD5.h"
 #include "sha1.h"
-#include "DigestFile.h"
+//#include "DigestFile.h"
 
 #include "FiletimeHelper.h"
 
+#include <QFile>
 
 int64_t CFileListHandler::GetSize(WIN32_FIND_DATA &FindData)
 {
@@ -380,36 +381,34 @@ void CFileProcess::AsciiDumpBin(const unsigned char *pBuffer, const size_t nLen,
 	}
 }
 
-bool CFileProcess::ProcessFile(CProcessedFileData &ProcessedData, CFileEntry &File)
+bool CFileProcess::ProcessFile(CProcessedFileData &ProcessedData, CFileEntry &Entry)
 {
-	if (File.m_bEntryProcessed == true)
+    if (Entry.m_bEntryProcessed == true)
 	{
 		// already processed previously?
 		// -> ignore second time?
 		// alternate: cleanup and process again?
 		
-		File.m_szMd5.clear();
-		File.m_szSha1.clear();
-		File.m_szHeaderDump.clear();
-		File.m_szHeaderAscii.clear();
-		File.m_bEntryProcessed = false;
-		
-		//return true;
+        Entry.m_szMd5.clear();
+        Entry.m_szSha1.clear();
+        Entry.m_szHeaderDump.clear();
+        Entry.m_szHeaderAscii.clear();
+        Entry.m_bEntryProcessed = false;
 	}
 	
-	if (File.m_i64FileSize == 0)
+    if (Entry.m_i64FileSize == 0)
 	{
 		// empty file -> nothing to do
 		return false;
 	}
-	if (File.m_szName.length() == 0)
+    if (Entry.m_szName.length() == 0)
 	{
 		// incomplete name -> cannot continue
 		return false;
 	}
 	
 	// path + name
-	wstring szFullName = GetFullPath(ProcessedData.m_Paths, File);
+    wstring szFullName = GetFullPath(ProcessedData.m_Paths, Entry);
 	if (szFullName.length() == 0)
 	{
 		// unknown path -> cannot continue
@@ -427,61 +426,66 @@ bool CFileProcess::ProcessFile(CProcessedFileData &ProcessedData, CFileEntry &Fi
 	// this way we small files can be read entirely to RAM first
 	// and we still support reading in smaller chunks for huge files
 	//
-	unsigned long ulChunkSize = 1024;
-	if (File.m_i64FileSize <= 1024*1024)
+    qint64 chunkSize = 1024;
+    if (Entry.m_i64FileSize <= 1024*1024)
 	{
-		ulChunkSize = (unsigned long)File.m_i64FileSize;
+        // for small files, use whole file
+        chunkSize = Entry.m_i64FileSize;
 	}
 
-	CDigestFile Reader(ulChunkSize);
-	if (Reader.OpenFile(szFullName.c_str()) == false)
-	{
-		return false;
-	}
+    QFile reader(QString::fromStdWString(szFullName));
+    if (reader.open(QFile::ReadOnly) == false)
+    {
+        return false;
+    }
 
-	// get as much fits to buffer (at maximum),
-	// actual amount can be smaller (e.g. when close to eof)
-	bool bRet = Reader.ReadChunk();
-	if (bRet == false
-		|| Reader.GetChunkSize() == 0)
-	{
-		// read failure -> nothing to do here
-		return false;
-	}
+    qint64 fileSize = reader.size();
+    uchar *pView = reader.map(0, fileSize);
+    if (pView == NULL)
+    {
+        return false;
+    }
 	
 	// identify fileformat (if possible)
 	//
-	IdentifyFile(File, Reader.GetChunk(), Reader.GetChunkSize());
+    IdentifyFile(Entry, pView, fileSize);
 	
 	// proceed reading file and digesting checksums
 	//
-	while (bRet == true && Reader.GetChunkSize() > 0)
+    qint64 offset = 0;
+    while (offset < Entry.m_i64FileSize)
 	{
-		// pass current data (buffer) and count of bytes read
-		// for processing into checksum
-		MyMD5.AddInput(Reader.GetChunk(), Reader.GetChunkSize());
-		MySHA1.AddInput(Reader.GetChunk(), Reader.GetChunkSize());
+        uchar *pPos = pView + offset;
+        qint64 nextChunkSize = (Entry.m_i64FileSize - (offset + chunkSize));
 
-		// get more (if possible)
-		bRet = Reader.ReadChunk();
+		// pass current data (buffer) and count of bytes read
+        // for processing into checksum/hash:
+        // use same page from file in both before moving to next
+        // to minimize IO and buffers needed
+        //
+        MyMD5.AddInput(pPos, nextChunkSize);
+        MySHA1.AddInput(pPos, nextChunkSize);
+
+        offset += nextChunkSize;
 	}
 	
 	HexEncode(MyMD5.GetResultDigest(), 
 			  MyMD5.GetDigestLength(), 
-			  File.m_szMd5);
+              Entry.m_szMd5);
 	
 	HexEncode(MySHA1.GetResultDigest(), 
 			  MySHA1.GetDigestLength(), 
-			  File.m_szSha1);
+              Entry.m_szSha1);
 
-	File.m_bEntryProcessed = true;
+    Entry.m_bEntryProcessed = true;
 
-	CFileEntry *pEntry = &File;
+    // (avoid some miscompiles.. fix use later)
+    CFileEntry *pEntry = &Entry;
 	ProcessedData.AddHashOfEntry(pEntry);
 
 	// update counters
 	++m_u64FilesProcessed;
-	m_u64BytesProcessed += File.m_i64FileSize;
+    m_u64BytesProcessed += Entry.m_i64FileSize;
 	m_ProcEnd.SetNow();
 	return true;
 }

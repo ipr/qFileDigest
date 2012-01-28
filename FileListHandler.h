@@ -495,39 +495,18 @@ protected:
 	void HexEncode(const unsigned char *pBuffer, const size_t nLen, wstring &szOutput) const;
 	void AsciiDumpBin(const unsigned char *pBuffer, const size_t nLen, wstring &szOutput) const;
 	
-	bool ProcessFile(CProcessedFileData &ProcessedData, CFileEntry &File);
+    bool ProcessFile(CProcessedFileData &ProcessedData, CFileEntry &Entry);
 	
 public:
 	CFileProcess() 
 		: m_u64FilesProcessed(0)
 		, m_u64BytesProcessed(0)
-		//, m_FileData()
 	{}
 	~CFileProcess() 
 	{}
 
-	/*
-	bool ListPathData(wstring &szPath);
-	
-	bool ProcessFileList()
-	{
-		return ProcessFileList(m_FileData);
-	}
-	*/
 	
 	bool ProcessFileList(CProcessedFileData &ProcessedData);
-
-	/*
-	CProcessedFileData& GetProcessedData()
-	{
-		return m_FileData;
-	}
-	
-	size_t GetListFileCount()
-	{
-		return m_FileData.GetFileCount();
-	}
-	*/
 
 	uint64_t GetTotalFilesProcessed() const
 	{

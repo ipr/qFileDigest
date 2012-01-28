@@ -1,7 +1,0 @@
-/////////////////////////////////
-//
-// (inline, see header)
-//
-
-#include "DigestFile.h"
-

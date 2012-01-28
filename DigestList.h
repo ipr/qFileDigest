@@ -9,6 +9,8 @@
 #ifndef DIGESTLIST_H
 #define DIGESTLIST_H
 
+// standard typedefs
+#include <stdint.h>
 
 #include "FileListHandler.h"
 
@@ -19,11 +21,72 @@
 #include <QPair>
 #include <QMap>
 
+class CDigestCounters
+{
+private:
+    // internal counters for statistics of processed files
+
+    // count of files processed
+    uint64_t m_u64FilesProcessed;
+
+    // TODO: amount of bytes in each file..
+    // can wraparound , how should we count?
+    uint64_t m_u64BytesProcessed;
+
+    // TODO: replace timeformat..
+    // entire processing time counting
+    CFiletimeHelper m_ProcStart;
+    CFiletimeHelper m_ProcEnd;
+
+public:
+    CDigestCounters()
+        : m_u64FilesProcessed(0)
+        , m_u64BytesProcessed(0)
+    {}
+    ~CDigestCounters()
+    {}
+
+    uint64_t GetTotalFilesProcessed() const
+    {
+        return m_u64FilesProcessed;
+    }
+
+    uint64_t GetTotalBytesProcessed() const
+    {
+        return m_u64BytesProcessed;
+    }
+
+    uint64_t GetSecondsProcessed() const
+    {
+        uint64_t u64Diff = (m_ProcEnd - m_ProcStart);
+        return (u64Diff / 10000000);
+    }
+
+    uint64_t GetFilesPerSecond() const
+    {
+        uint64_t u64Diff = GetSecondsProcessed();
+        if (u64Diff > 0)
+        {
+            return (m_u64FilesProcessed / u64Diff);
+        }
+        return m_u64FilesProcessed;
+    }
+
+    uint64_t GetBytesPerSecond() const
+    {
+        uint64_t u64Diff = GetSecondsProcessed();
+        if (u64Diff > 0)
+        {
+            return (m_u64BytesProcessed / u64Diff);
+        }
+        return m_u64BytesProcessed;
+    }
+};
+
 class QStatusBar;
 
 
 // TODO: inherit from model instead?
-
 
 class DigestList
 {
@@ -37,6 +100,9 @@ private:
 
 	// file processing and statistic-counting
     CFileProcess m_ProcFile;
+
+    // statistic-counters
+    CDigestCounters m_Counters;
 
 	// map path index to top-level item:
 	// all paths are not listed since they might not have any files..
@@ -82,6 +148,9 @@ protected:
 	bool IsFileEntryListed(QTreeWidgetItem *pTopItem, CFileEntry *pEntry);
 	bool IsEntryListedAsDuplicate(QTreeWidgetItem *pSubItem, CFileEntry *pMatch);
 	
+
+    bool ProcessFileList(CProcessedFileData &ProcessedData);
+
 public:
     DigestList();
     ~DigestList();

@@ -12,11 +12,7 @@
 
 #include <stdint.h>
 
-#include <tchar.h>
-#include <Windows.h>
-
 #include <string>
-//#include <wstring>
 #include <map>
 #include <vector>
 using namespace std;

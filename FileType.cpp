@@ -1,5 +1,12 @@
 #include "FileType.h"
 
+#ifdef _WIN32
+#define UNICODE
+#define _UNICODE
+#include <tchar.h>
+#include <Windows.h>
+#endif
+
 /*
 tHeaderType CFileType::SubTypeFromHeader(const tHeaderType enType, const uint8_t *pBuffer, const uint32_t ulLength)
 {

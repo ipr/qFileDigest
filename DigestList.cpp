@@ -222,12 +222,54 @@ bool DigestList::IsEntryListedAsDuplicate(QTreeWidgetItem *pSubItem, CFileEntry 
 }
 
 
+bool DigestList::ProcessFileList(CProcessedFileData &ProcessedData)
+{
+    m_Counters.m_u64FilesProcessed = 0;
+    m_Counters.m_u64BytesProcessed = 0;
+
+    if (ProcessedData.GetFileCount() == 0)
+    {
+        return false;
+    }
+
+    // reset on start
+    m_Counters.m_ProcStart.SetNow();
+
+    CProcessedFileData::tFileList::iterator itList = ProcessedData.m_vFileList.begin();
+    CProcessedFileData::tFileList::iterator itListEnd = ProcessedData.m_vFileList.end();
+    while (itList != itListEnd)
+    {
+        CFileEntry *pEntry = (*itList);
+
+        // get MD5 and SHA1 sum of each file
+        ProcessFile(ProcessedData, (*pEntry));
+
+        /*
+        if (pEntry->m_FileType.IsArchive() == true)
+        {
+            // unpack/uncompress/decrunch archive
+            // and check individual files also?
+
+        }
+        */
+
+        ++itList;
+    }
+
+    // update
+    m_Counters.m_ProcEnd.SetNow();
+
+    return true;
+}
+
+
 /////////// public methods
 
 DigestList::DigestList()
 	: m_pWidget(nullptr),
 	m_FileData(),
 	m_ProcFile(),
+    m_Counters(),
 	m_PathIxToItem(),
 	m_EntryToItem(),
 	m_ItemToEntry()
