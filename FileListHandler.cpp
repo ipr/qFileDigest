@@ -456,7 +456,11 @@ bool CFileProcess::ProcessFile(CProcessedFileData &ProcessedData, CFileEntry &En
     while (offset < Entry.m_i64FileSize)
 	{
         uchar *pPos = pView + offset;
-        qint64 nextChunkSize = (Entry.m_i64FileSize - (offset + chunkSize));
+        qint64 nextChunkSize = chunkSize; 
+        if ((Entry.m_i64FileSize - offset) < chunkSize)
+        {
+			nextChunkSize = (Entry.m_i64FileSize - offset);
+        }
 
 		// pass current data (buffer) and count of bytes read
         // for processing into checksum/hash:
@@ -483,64 +487,8 @@ bool CFileProcess::ProcessFile(CProcessedFileData &ProcessedData, CFileEntry &En
     CFileEntry *pEntry = &Entry;
 	ProcessedData.AddHashOfEntry(pEntry);
 
-	// update counters
-	++m_u64FilesProcessed;
-    m_u64BytesProcessed += Entry.m_i64FileSize;
-	m_ProcEnd.SetNow();
 	return true;
 }
 
-/*
-bool CFileProcess::ListPathData(wstring &szPath)
-{
-	CFileListHandler FileLister(szPath); // root path lister
-	
-	// process path recursively
-	if (FileLister.ListFiles(m_FileData) == false)
-	{
-		return false;
-	}
-	return true;
-}
-*/
 
-bool CFileProcess::ProcessFileList(CProcessedFileData &ProcessedData)
-{
-	m_u64FilesProcessed = 0;
-	m_u64BytesProcessed = 0;
-	
-	if (ProcessedData.GetFileCount() == 0)
-	{
-		return false;
-	}
-	
-	// reset on start
-	m_ProcStart.SetNow();
-	
-    CProcessedFileData::tFileList::iterator itList = ProcessedData.m_vFileList.begin();
-    CProcessedFileData::tFileList::iterator itListEnd = ProcessedData.m_vFileList.end();
-    while (itList != itListEnd)
-    {
-		CFileEntry *pEntry = (*itList);
-		
-	    // get MD5 and SHA1 sum of each file
-	    ProcessFile(ProcessedData, (*pEntry));
-		
-		/*
-		if (pEntry->m_FileType.IsArchive() == true)
-		{
-			// unpack/uncompress/decrunch archive
-			// and check individual files also?
-			
-		}
-		*/
-		
-	    ++itList;
-    }
-	
-	// update
-	m_ProcEnd.SetNow();
-	
-	return true;
-}
 

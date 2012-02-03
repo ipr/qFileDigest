@@ -1,8 +1,12 @@
 #include "FileType.h"
 
 #ifdef _WIN32
+#ifndef UNICODE
 #define UNICODE
+#endif
+#ifndef _UNICODE
 #define _UNICODE
+#endif
 #include <tchar.h>
 #include <Windows.h>
 #endif

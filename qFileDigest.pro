@@ -44,19 +44,19 @@ FORMS    += mainwindow.ui \
 
 # TODO: replace old libraries&classes with wrapper
 # to reduce repeated code and support for more packers&archivers
-# INCLUDEPATH += ../qXpkLib ../qXpkLib
-# LIBS += -lqXpkLib -lqXpkLib
+# INCLUDEPATH += ../qXpkLib
+# LIBS += -lqXpkLib
 
-INCLUDEPATH += ../qLhA ../qLZXLib
-LIBS += -lqLhA -lqLZXLib
+INCLUDEPATH += ../qLhALib ../qLZXLib
+LIBS += -lqLhAlib -lqLZXLib
 
 CONFIG (debug, debug|release) 
 {
-    LIBS += -L../qLhA-build-desktop/debug
+    LIBS += -L../qLhAlib-build-desktop/debug
     LIBS += -L../qLZXLib-build-desktop/debug
 } 
 CONFIG (release, debug|release) 
 {
-    LIBS += -L../qLhA-build-desktop/release
+    LIBS += -L../qLhAlib-build-desktop/release
     LIBS += -L../qLZXLib-build-desktop/release
 }

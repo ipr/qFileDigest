@@ -82,6 +82,10 @@ void DetailsDialog::ShowEntryDetails()
 	bool bIsDecrunchAvailable = false;
 	bool bIsArchiveViewAvailable = false;
 	
+	// TODO: get file type info with shared library:
+	//qXpkLib->setInputFile();
+	//qXpkLib->xpkInfo();
+	
 	switch (m_pCurrentEntry->m_FileType.m_enFileType)
 	{
 	case HEADERTYPE_PP20:

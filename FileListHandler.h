@@ -460,33 +460,6 @@ public:
 //
 class CFileProcess
 {
-private:
-	// internal counters for statistics of processed files
-
-	// count of files processed
-	uint64_t m_u64FilesProcessed;
-	
-	// TODO: amount of bytes in each file..
-	// can wraparound , how should we count?
-	uint64_t m_u64BytesProcessed;
-
-	// entire processing time counting
-	//FILETIME m_ftProcStart;
-	//FILETIME m_ftProcEnd;
-	CFiletimeHelper m_ProcStart;
-	CFiletimeHelper m_ProcEnd;
-	
-	// per-file time counting
-	//FILETIME m_ftFileStart;
-	//FILETIME m_ftFileEnd;
-	
-	//wstring m_szRootPath;
-	//CFileListHandler m_RootPath;
-
-	// actual file&path processing and related data
-	//CProcessedFileData m_FileData;
-
-	
 protected:
 
 	void IdentifyFile(CFileEntry &Entry, const uint8_t *pBuffer, const size_t nLength) const;
@@ -495,54 +468,13 @@ protected:
 	void HexEncode(const unsigned char *pBuffer, const size_t nLen, wstring &szOutput) const;
 	void AsciiDumpBin(const unsigned char *pBuffer, const size_t nLen, wstring &szOutput) const;
 	
-    bool ProcessFile(CProcessedFileData &ProcessedData, CFileEntry &Entry);
 	
 public:
 	CFileProcess() 
-		: m_u64FilesProcessed(0)
-		, m_u64BytesProcessed(0)
 	{}
 	~CFileProcess() 
 	{}
-
 	
-	bool ProcessFileList(CProcessedFileData &ProcessedData);
-
-	uint64_t GetTotalFilesProcessed() const
-	{
-		return m_u64FilesProcessed;
-	}
-	
-	uint64_t GetTotalBytesProcessed() const
-	{
-		return m_u64BytesProcessed;
-	}
-
-	uint64_t GetSecondsProcessed() const
-	{
-		uint64_t u64Diff = (m_ProcEnd - m_ProcStart);
-		return (u64Diff / 10000000);
-	}
-	
-	uint64_t GetFilesPerSecond() const
-	{
-		uint64_t u64Diff = GetSecondsProcessed();
-		if (u64Diff > 0)
-		{
-			return (m_u64FilesProcessed / u64Diff);
-		}
-		return m_u64FilesProcessed;
-	}
-
-	uint64_t GetBytesPerSecond() const
-	{
-		uint64_t u64Diff = GetSecondsProcessed();
-		if (u64Diff > 0)
-		{
-			return (m_u64BytesProcessed / u64Diff);
-		}
-		return m_u64BytesProcessed;
-	}
-	
+    bool ProcessFile(CProcessedFileData &ProcessedData, CFileEntry &Entry);
 };
 

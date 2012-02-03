@@ -222,47 +222,6 @@ bool DigestList::IsEntryListedAsDuplicate(QTreeWidgetItem *pSubItem, CFileEntry 
 }
 
 
-bool DigestList::ProcessFileList(CProcessedFileData &ProcessedData)
-{
-    m_Counters.m_u64FilesProcessed = 0;
-    m_Counters.m_u64BytesProcessed = 0;
-
-    if (ProcessedData.GetFileCount() == 0)
-    {
-        return false;
-    }
-
-    // reset on start
-    m_Counters.m_ProcStart.SetNow();
-
-    CProcessedFileData::tFileList::iterator itList = ProcessedData.m_vFileList.begin();
-    CProcessedFileData::tFileList::iterator itListEnd = ProcessedData.m_vFileList.end();
-    while (itList != itListEnd)
-    {
-        CFileEntry *pEntry = (*itList);
-
-        // get MD5 and SHA1 sum of each file
-        ProcessFile(ProcessedData, (*pEntry));
-
-        /*
-        if (pEntry->m_FileType.IsArchive() == true)
-        {
-            // unpack/uncompress/decrunch archive
-            // and check individual files also?
-
-        }
-        */
-
-        ++itList;
-    }
-
-    // update
-    m_Counters.m_ProcEnd.SetNow();
-
-    return true;
-}
-
-
 /////////// public methods
 
 DigestList::DigestList()
@@ -380,14 +339,43 @@ bool DigestList::ListFile(QString &szFilePath)
 
 bool DigestList::ProcessFileList()
 {
+	// reset on start
+	m_Counters.ClearCounters();
+	
     if (m_FileData.GetFileCount() == 0)
     {
 		// nothing found in path, no error
 		return true;
     }
 
-	// get MD5 and SHA1 sum of each file
-	return m_ProcFile.ProcessFileList(m_FileData);
+    CProcessedFileData::tFileList::iterator itList = m_FileData.m_vFileList.begin();
+    CProcessedFileData::tFileList::iterator itListEnd = m_FileData.m_vFileList.end();
+    while (itList != itListEnd)
+    {
+        CFileEntry *pEntry = (*itList);
+
+        // get MD5 and SHA1 sum of each file
+        m_ProcFile.ProcessFile(m_FileData, (*pEntry));
+
+        /*
+        if (pEntry->m_FileType.IsArchive() == true)
+        {
+            // unpack/uncompress/decrunch archive
+            // and check individual files also?
+
+        }
+        */
+        
+		// update counters on each file
+		m_Counters.UpdateOnEntry(pEntry);
+
+        ++itList;
+    }
+
+    // update time of ending now
+    m_Counters.m_ProcEnd.SetNow();
+
+    return true;
 }
 
 void DigestList::ShowProcessed()
@@ -446,16 +434,16 @@ void DigestList::ShowStatistics(QStatusBar *pStatusBar)
 	}
 	
 	// count some statistics
-	uint64_t u64Seconds = m_ProcFile.GetSecondsProcessed();
-	uint64_t u64FilesPerSec = m_ProcFile.GetFilesPerSecond();
-	uint64_t u64BytesPerSec = m_ProcFile.GetBytesPerSecond();
+	uint64_t u64Seconds = m_Counters.GetSecondsProcessed();
+	uint64_t u64FilesPerSec = m_Counters.GetFilesPerSecond();
+	uint64_t u64BytesPerSec = m_Counters.GetBytesPerSecond();
 
 	QString szStat = QString("Files/s: %1, Bytes/s: %2, Time used (s): %3, File count: %4, Byte count: %5")
 					 .arg(u64FilesPerSec)
 					 .arg(u64BytesPerSec)
 					 .arg(u64Seconds)
-					 .arg(m_ProcFile.GetTotalFilesProcessed())
-					 .arg(m_ProcFile.GetTotalBytesProcessed());
+					 .arg(m_Counters.GetTotalFilesProcessed())
+					 .arg(m_Counters.GetTotalBytesProcessed());
 	pStatusBar->showMessage(szStat);
 }
 

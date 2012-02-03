@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include "FileListHandler.h"
+#include "FiletimeHelper.h"
 
 #include <QString>
 
@@ -21,75 +22,93 @@
 #include <QPair>
 #include <QMap>
 
-class CDigestCounters
-{
-private:
-    // internal counters for statistics of processed files
-
-    // count of files processed
-    uint64_t m_u64FilesProcessed;
-
-    // TODO: amount of bytes in each file..
-    // can wraparound , how should we count?
-    uint64_t m_u64BytesProcessed;
-
-    // TODO: replace timeformat..
-    // entire processing time counting
-    CFiletimeHelper m_ProcStart;
-    CFiletimeHelper m_ProcEnd;
-
-public:
-    CDigestCounters()
-        : m_u64FilesProcessed(0)
-        , m_u64BytesProcessed(0)
-    {}
-    ~CDigestCounters()
-    {}
-
-    uint64_t GetTotalFilesProcessed() const
-    {
-        return m_u64FilesProcessed;
-    }
-
-    uint64_t GetTotalBytesProcessed() const
-    {
-        return m_u64BytesProcessed;
-    }
-
-    uint64_t GetSecondsProcessed() const
-    {
-        uint64_t u64Diff = (m_ProcEnd - m_ProcStart);
-        return (u64Diff / 10000000);
-    }
-
-    uint64_t GetFilesPerSecond() const
-    {
-        uint64_t u64Diff = GetSecondsProcessed();
-        if (u64Diff > 0)
-        {
-            return (m_u64FilesProcessed / u64Diff);
-        }
-        return m_u64FilesProcessed;
-    }
-
-    uint64_t GetBytesPerSecond() const
-    {
-        uint64_t u64Diff = GetSecondsProcessed();
-        if (u64Diff > 0)
-        {
-            return (m_u64BytesProcessed / u64Diff);
-        }
-        return m_u64BytesProcessed;
-    }
-};
 
 class QStatusBar;
 
+class DigestCounters
+{
+public:
+	// internal counters for statistics of processed files
 
-// TODO: inherit from model instead?
+	// count of files processed
+	uint64_t m_u64FilesProcessed;
+	
+	// TODO: amount of bytes in each file..
+	// can wraparound , how should we count?
+	uint64_t m_u64BytesProcessed;
+
+	// entire processing time counting
+	CFiletimeHelper m_ProcStart;
+	CFiletimeHelper m_ProcEnd;
+	
+	// per-file time counting
+	//FILETIME m_ftFileStart;
+	//FILETIME m_ftFileEnd;
+
+public:
+	DigestCounters() 
+		: m_u64FilesProcessed(0)
+		, m_u64BytesProcessed(0)
+	{}
+	~DigestCounters() {}
+	
+	void ClearCounters()
+	{
+		m_u64FilesProcessed = 0;
+		m_u64BytesProcessed = 0;
+	
+		// reset on start
+		m_ProcStart.SetNow();
+		m_ProcEnd = m_ProcStart;
+	}
+	
+	void UpdateOnEntry(CFileEntry *pEntry)
+	{
+		++m_u64FilesProcessed;
+		m_u64BytesProcessed += pEntry->m_i64FileSize;
+	}
+	
+	uint64_t GetTotalFilesProcessed() const
+	{
+		return m_u64FilesProcessed;
+	}
+	
+	uint64_t GetTotalBytesProcessed() const
+	{
+		return m_u64BytesProcessed;
+	}
+
+	uint64_t GetSecondsProcessed() const
+	{
+		uint64_t u64Diff = (m_ProcEnd - m_ProcStart);
+		return (u64Diff / 10000000);
+	}
+	
+	uint64_t GetFilesPerSecond() const
+	{
+		uint64_t u64Diff = GetSecondsProcessed();
+		if (u64Diff > 0)
+		{
+			return (m_u64FilesProcessed / u64Diff);
+		}
+		return m_u64FilesProcessed;
+	}
+
+	uint64_t GetBytesPerSecond() const
+	{
+		uint64_t u64Diff = GetSecondsProcessed();
+		if (u64Diff > 0)
+		{
+			return (m_u64BytesProcessed / u64Diff);
+		}
+		return m_u64BytesProcessed;
+	}
+};
 
 class DigestList
 {
+// TODO: inherit from model instead?
+
 private:
 	// pointer to widget in UI
 	QTreeWidget *m_pWidget;
@@ -100,9 +119,9 @@ private:
 
 	// file processing and statistic-counting
     CFileProcess m_ProcFile;
-
-    // statistic-counters
-    CDigestCounters m_Counters;
+    
+    // statistical counters for display
+    DigestCounters m_Counters;
 
 	// map path index to top-level item:
 	// all paths are not listed since they might not have any files..
@@ -148,9 +167,6 @@ protected:
 	bool IsFileEntryListed(QTreeWidgetItem *pTopItem, CFileEntry *pEntry);
 	bool IsEntryListedAsDuplicate(QTreeWidgetItem *pSubItem, CFileEntry *pMatch);
 	
-
-    bool ProcessFileList(CProcessedFileData &ProcessedData);
-
 public:
     DigestList();
     ~DigestList();
