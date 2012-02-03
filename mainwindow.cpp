@@ -62,7 +62,7 @@ void MainWindow::on_actionAbout_triggered()
 	pTxt->append("qFileDigest by Ilkka Prusi 2011");
 	pTxt->append("");
 	pTxt->append("This program is free to use and distribute. No warranties of any kind.");
-	pTxt->append("This program uses Qt 4.7.1 under LGPL v. 2.1");
+	pTxt->append("This program uses Qt 4.7.2 under LGPL v. 2.1");
 	pTxt->append("This program uses code derived from the RSA Data Security, Inc. MD5 Message-Digest Algorithm");
 	pTxt->append("");
 	/*
@@ -101,15 +101,12 @@ void MainWindow::onPathSelected(QString szNewPath)
 	ui->statusBar->showMessage("Processing files..");
 	
 	// get MD5 and SHA1 sum of each listed file
-	if (m_DigestList.ProcessFileList() == false)
+	if (m_DigestList.ProcessFileList() == true)
 	{
+		// show some statistics on status-bar
+		m_DigestList.ShowStatistics(ui->statusBar);
 	}
 
-	// show some statistics on status-bar
-	m_DigestList.ShowStatistics(ui->statusBar);
-
-	m_DigestList.ShowProcessed();
-	
 	//emit sPathsProcessed();
 }
 
@@ -141,11 +138,6 @@ void MainWindow::onPathProcessed(long lIndex)
 /*
 void MainWindow::onPathsProcessed()
 {
-	//ui->statusBar->showMessage("Paths processed, displaying files..");
-
-	m_DigestList.ShowProcessed();
-	
-	//ui->statusBar->clearMessage();
 }
 */
 

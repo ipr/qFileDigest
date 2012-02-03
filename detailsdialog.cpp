@@ -269,7 +269,6 @@ void DetailsDialog::on_cmdDecrunch_clicked()
 			
 			// get MD5 and SHA1 hashes etc.
 			//m_pDigestList->ProcessFileList();
-			//m_pDigestList->ShowProcessed();
 			ui->cmdDecrunch->setHidden(true);
 		}
 		catch (std::exception &exp) // catch by base-type
@@ -291,7 +290,6 @@ void DetailsDialog::on_cmdDecrunch_clicked()
 			
 			// get MD5 and SHA1 hashes etc.
 			//m_pDigestList->ProcessFileList();
-			//m_pDigestList->ShowProcessed();
 			ui->cmdDecrunch->setHidden(true);
 		}
 		catch (std::exception &exp) // catch by base-type

@@ -221,6 +221,30 @@ bool DigestList::IsEntryListedAsDuplicate(QTreeWidgetItem *pSubItem, CFileEntry 
 	return false;
 }
 
+// list each found file (and duplicate, if any) 
+// after we know what the files are..
+void DigestList::ListProcessed()
+{
+    CProcessedFileData::tFileList::iterator itList = m_FileData.m_vFileList.begin();
+    CProcessedFileData::tFileList::iterator itListEnd = m_FileData.m_vFileList.end();
+    while (itList != itListEnd)
+    {
+        CFileEntry *pEntry = (*itList);
+
+		// check that file and path are in widget-display before adding duplicates to list
+		QTreeWidgetItem *pTopItem = PathToItem(pEntry->m_lPathIndex);
+		QTreeWidgetItem *pSubItem = FileToSubItem(pTopItem, pEntry);
+		
+		// keep for reverse-mapping item to entry
+		m_ItemToEntry.insert(pSubItem, pEntry);
+		
+		// list each found duplicate under the entry (if any)
+		// without itself for simple lookup in GUI
+		DuplicateFilesToItems(pSubItem, m_FileData.GetMatchListOfEntry(pEntry));
+		
+        ++itList;
+    }
+}
 
 /////////// public methods
 
@@ -251,9 +275,6 @@ void DigestList::SetTreeWidget(QTreeWidget *pView)
 void DigestList::InitTreeWidget()
 {
 	QStringList treeHeaders;
-	//treeHeaders << "Path" << "File" << "Size" << "Checksum";
-	//treeHeaders << "Name" << "Size" << "MD5" << "SHA-1";
-
 	treeHeaders << "Name" << "Size" << "Type" << "MD5" << "SHA-1";
 	
 	m_pWidget->setColumnCount(treeHeaders.size());
@@ -353,57 +374,43 @@ bool DigestList::ProcessFileList()
     while (itList != itListEnd)
     {
         CFileEntry *pEntry = (*itList);
+		if (pEntry->m_bEntryProcessed == true)
+		{
+			// already processed previously?
+			// (ignore second time?)
+			// alternate: cleanup and process again?
+			pEntry->ClearProcessing();
+			
+	        //++itList;
+	        //continue;
+		}
 
         // get MD5 and SHA1 sum of each file
-        m_ProcFile.ProcessFile(m_FileData, (*pEntry));
-
+        if (m_ProcFile.ProcessFile(m_FileData, (*pEntry)) == true)
+        {
+			// update counters on each file (success only)
+			m_Counters.UpdateOnEntry(pEntry);
+        }
+        
         /*
         if (pEntry->m_FileType.IsArchive() == true)
         {
             // unpack/uncompress/decrunch archive
             // and check individual files also?
-
+            // -> list contents, extract&process each.. (use qXpkLib)
         }
         */
-        
-		// update counters on each file
-		m_Counters.UpdateOnEntry(pEntry);
 
         ++itList;
     }
+    
+	ListProcessed();
+	m_pWidget->resizeColumnToContents(0);
 
     // update time of ending now
     m_Counters.m_ProcEnd.SetNow();
-
+	
     return true;
-}
-
-void DigestList::ShowProcessed()
-{
-	// lookup hash-match for each file in list,
-	// show duplicates on each file (if any)
-	//
-	CProcessedFileData::tFileList::const_iterator it = m_FileData.m_vFileList.begin();
-	CProcessedFileData::tFileList::const_iterator itEnd = m_FileData.m_vFileList.end();
-	while (it != itEnd)
-	{
-		CFileEntry *pEntry = (*it);
-
-		// check that file and path are in widget-display before adding duplicates to list
-		QTreeWidgetItem *pTopItem = PathToItem(pEntry->m_lPathIndex);
-		QTreeWidgetItem *pSubItem = FileToSubItem(pTopItem, pEntry);
-		
-		// keep for reverse-mapping item to entry
-		m_ItemToEntry.insert(pSubItem, pEntry);
-		
-		// list each found duplicate under the entry
-		// without itself for simple lookup in GUI
-		//
-		DuplicateFilesToItems(pSubItem, m_FileData.GetMatchListOfEntry(pEntry));
-		
-		++it;
-	}
-	m_pWidget->resizeColumnToContents(0);
 }
 
 void DigestList::ExpandToDuplicates()
@@ -450,20 +457,6 @@ void DigestList::ShowStatistics(QStatusBar *pStatusBar)
 CFileEntry *DigestList::GetEntryOfItem(QTreeWidgetItem *pItem)
 {
 	return m_ItemToEntry.value(pItem, nullptr);
-
-	/*	
-	auto it = m_EntryToItem.begin();
-	auto itEnd = m_EntryToItem.end();
-	while (it != itEnd)
-	{
-		if (it.value() == pItem)
-		{
-			return it.key();
-		}
-		++it;
-	}
-	return nullptr;
-	*/
 }
 
 QString DigestList::GetFullPathToEntry(CFileEntry *pEntry)

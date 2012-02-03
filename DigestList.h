@@ -166,6 +166,8 @@ protected:
 	//
 	bool IsFileEntryListed(QTreeWidgetItem *pTopItem, CFileEntry *pEntry);
 	bool IsEntryListedAsDuplicate(QTreeWidgetItem *pSubItem, CFileEntry *pMatch);
+
+	void ListProcessed();
 	
 public:
     DigestList();
@@ -182,7 +184,6 @@ public:
 
 	bool ProcessFileList();
 	
-	void ShowProcessed();
 	void ExpandToDuplicates();
 	
 	void ShowStatistics(QStatusBar *pStatusBar);

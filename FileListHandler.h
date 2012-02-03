@@ -146,6 +146,17 @@ public:
 		// no match
 		return false;
 	}
+	
+	// clear information related to processing
+	// for handling again (change in file or something..)
+	void ClearProcessing()
+	{
+		m_szMd5.clear();
+		m_szSha1.clear();
+		m_szHeaderDump.clear();
+		m_szHeaderAscii.clear();
+		m_bEntryProcessed = false;
+	}
 
 };
 

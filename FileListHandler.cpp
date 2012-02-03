@@ -383,19 +383,6 @@ void CFileProcess::AsciiDumpBin(const unsigned char *pBuffer, const size_t nLen,
 
 bool CFileProcess::ProcessFile(CProcessedFileData &ProcessedData, CFileEntry &Entry)
 {
-    if (Entry.m_bEntryProcessed == true)
-	{
-		// already processed previously?
-		// -> ignore second time?
-		// alternate: cleanup and process again?
-		
-        Entry.m_szMd5.clear();
-        Entry.m_szSha1.clear();
-        Entry.m_szHeaderDump.clear();
-        Entry.m_szHeaderAscii.clear();
-        Entry.m_bEntryProcessed = false;
-	}
-	
     if (Entry.m_i64FileSize == 0)
 	{
 		// empty file -> nothing to do
